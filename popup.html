@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOC Analyst Toolkit</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 440px;
+      height: 620px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1f2937;
+      color: #f9fafb;
+      font-size: 13px;
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #374151;
+    }
+    
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #111827;
+      border-bottom: 1px solid #374151;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      color: #fff;
+    }
+
+    .header-content h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .header-content .version {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .control-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s, transform 0.08s;
+    }
+
+    .control-btn:hover {
+      background: rgba(255,255,255,0.03);
+      color: #fff;
+    }
+
+    .control-btn:active {
+      transform: scale(0.98);
+    }
+
+    .control-btn i {
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .tab-nav {
+      display: flex;
+      background: #374151;
+      border-bottom: 1px solid #4b5563;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 12px;
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      background: #1f2937;
+      color: #60a5fa;
+      border-bottom: 2px solid #3b82f6;
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: #4b5563;
+      color: #d1d5db;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 16px;
+      height: calc(620px - 120px); /* Total height minus header and tab nav */
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* IOC Analysis Styles */
+
+    /* Header and float-mode controls */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .version {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .control-btn:active {
+      transform: translateY(0);
+    }
+
+    .control-btn i {
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    /* Float mode styles */
+    body.float-mode {
+      min-width: 440px;
+      min-height: 620px;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    body.float-mode .header {
+      cursor: move;
+      user-select: none;
+    }
+
+    .ioc-input {
+      width: 100%;
+      min-height: 70px;
+      padding: 10px;
+      background: #374151;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      color: #f9fafb;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    
+    .ioc-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #059669;
+    }
+    
+    .ioc-results {
+      background: #374151;
+      border-radius: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    
+    .ioc-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid #4b5563;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    
+    .ioc-item:last-child {
+      border-bottom: none;
+    }
+    
+    .ioc-value {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: #4b5563;
+      padding: 4px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      flex: 1;
+      word-break: break-all;
+    }
+    
+    .ioc-value:hover {
+      background: #6b7280;
+    }
+    
+    .ioc-type {
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .type-ip { background: #3b82f6; }
+    .type-domain { background: #10b981; }
+    .type-url { background: #8b5cf6; }
+    .type-email { background: #f59e0b; }
+    .type-hash { background: #ef4444; }
+    
+    .osint-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    
+    .osint-link {
+      padding: 2px 6px;
+      background: #1f2937;
+      color: #60a5fa;
+      text-decoration: none;
+      border-radius: 3px;
+      font-size: 10px;
+      transition: all 0.2s;
+    }
+    
+    .osint-link:hover {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .osint-link-container {
+      display: flex;
+      align-items: center;
+      background: #1f2937;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .copy-link-btn {
+      background: #374151;
+      border: none;
+      color: #9ca3af;
+      padding: 2px 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .copy-link-btn:hover {
+      background: #4b5563;
+      color: #fff;
+    }
+
+    .copy-link-btn i {
+      font-size: 8px;
+      pointer-events: none;
+    }
+
+    /* Dropdown Styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown > .btn {
+      white-space: nowrap;
+    }
+    .dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 4px);
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      min-width: 160px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      padding: 6px;
+      display: none;
+      z-index: 1000;
+    }
+    .dropdown.open .dropdown-menu { display: block; }
+    .dropdown-item {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #e5e7eb;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .dropdown-item:hover {
+      background: #1f2937;
+      color: #fff;
+    }
+
+    /* Snippet Styles */
+
+    .snippet-search {
+      width: 100%;
+      padding: 8px 12px;
+      background: #374151;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+    }
+    .snippet-search {
+      width: 100%;
+      padding: 8px 12px;
+      background: #374151;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      color: #f9fafb;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .snippet-search:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    .snippet-list {
+      max-height: 380px;
+      overflow-y: auto;
+    }
+    
+    .snippet-item {
+      background: #374151;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    
+    .snippet-header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .snippet-header:hover {
+      background: #4b5563;
+    }
+    
+    .snippet-name {
+      font-weight: 500;
+      color: #f9fafb;
+    }
+    
+    .snippet-trigger {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: #6b7280;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #d1d5db;
+    }
+    
+    .snippet-content {
+      padding: 0 12px 12px;
+      display: none;
+      border-top: 1px solid #4b5563;
+      padding-top: 8px;
+    }
+    
+    .snippet-content.expanded {
+      display: block;
+    }
+    
+    .snippet-text {
+      background: #1f2937;
+      padding: 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 100px;
+      overflow-y: auto;
+      margin-bottom: 8px;
+    }
+    
+    .snippet-actions {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+    
+    .empty-state i {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: #4b5563;
+    }
+    
+    /* Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #374151;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #6b7280;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .notification.success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .notification.error {
+      background: #ef4444;
+      color: white;
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Settings Styles */
+    .settings-row {
+      margin: 12px 0;
+      padding: 8px 0;
+      border-top: 1px solid #4b5563;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #d1d5db;
+      user-select: none;
+    }
+
+    .setting-item input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #6b7280;
+      border-radius: 3px;
+      background: #374151;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .setting-item input[type="checkbox"]:checked {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .setting-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: -2px;
+      left: 2px;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .setting-item:hover input[type="checkbox"] {
+      border-color: #9ca3af;
+    }
+
+    /* Float mode styles */
+    body.float-mode {
+      min-width: 440px;
+      min-height: 620px;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+body.float-mode .header {
+      cursor: move;
+      user-select: none;
+}
+
+/* === Unified Button Styles (IOC + Snippets) === */
+.btn,
+.btn-small {
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #f9fafb;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn:hover,
+.btn-small:hover {
+  background: #374151;
+  border-color: #4b5563;
+  color: #fff;
+}
+
+/* Primary action button (use for big calls-to-action like "Analyze") */
+.btn-primary {
+  background: #2563eb;
+  border-color: #1d4ed8;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  border-color: #1e40af;
+}
+
+/* Secondary subtle button (use if you want a "de-emphasized" look) */
+.btn-secondary {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+/* Snippet Tab Buttons */
+.snippet-actions .btn {
+  margin-left: 6px;
+}
+
+/* IOC Results Header + Footer Buttons */
+.ioc-controls .btn,
+.ioc-controls .dropdown > .btn,
+.ioc-footer .btn,
+.ioc-footer .dropdown > .btn {
+  margin-left: 6px;
+}
+
+/* IOC Input Container */
+#ioc-tab .input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: #111827;
+  border-bottom: 1px solid #374151;
+}
+
+/* Textarea */
+#iocInput {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #f9fafb;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 8px;
+  min-height: 120px;
+  resize: vertical;
+  width: 100%;
+}
+
+/* Snippet suggestion dropdown (appears under the IOC input) */
+.snippet-suggestions {
+  position: absolute;
+  background: #0f1724;
+  border: 1px solid #374151;
+  color: #e5e7eb;
+  z-index: 800;
+  max-height: 220px;
+  overflow: auto;
+  display: none;
+  border-radius: 6px;
+}
+.snippet-suggestions.active { display: block; }
+.snippet-suggestions .suggestion { padding: 8px 10px; cursor: pointer; font-size: 13px; }
+.snippet-suggestions .suggestion:hover { background: #111827; }
+.snippet-suggestions .suggestion.selected { background: #0b1220; }
+
+/* Primary (blue) */
+.btn-primary {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  border-color: #1e40af;
+}
+
+/* Secondary (muted) */
+.btn-secondary {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+/* IOC footer bulk actions */
+.ioc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid #4b5563;
+}
+.ioc-footer .ioc-bulk-actions {
+  display: flex;
+  gap: 6px;
+}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>
+        <i class="fa-solid fa-shield-halved"></i>
+        SOC Toolkit
+      </h1>
+      <div class="version">v0.2</div>
+    </div>
+    <div class="header-controls">
+      <button class="control-btn" id="floatBtn" title="Open in floating window">
+        <i class="fa-solid fa-external-link-alt"></i>
+      </button>
+      <button class="control-btn" id="closeBtn" title="Close">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+  
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="ioc">
+      <i class="fa-solid fa-search"></i>
+      IOC Analysis
+    </button>
+    <button class="tab-btn" data-tab="snippets">
+      <i class="fa-solid fa-code"></i>
+      Snippets
+    </button>
+  </div>
+  
+  <!-- IOC Analysis Tab -->
+  <div class="tab-content active" id="ioc-tab">
+    <textarea 
+      class="ioc-input" 
+      placeholder="Paste suspicious text, IPs, domains, URLs, emails, or hashes here for analysis..."
+      id="iocInput"></textarea>
+    <div id="snippetSuggestions" class="snippet-suggestions" role="listbox" aria-label="Snippet suggestions"></div>
+    
+    <div class="btn-group">
+      <button class="btn btn-primary" id="analyzeBtn">
+        <i class="fa-solid fa-search"></i>
+        Analyze
+      </button>
+      <button class="btn btn-secondary" id="clearBtn">
+        <i class="fa-solid fa-trash"></i>
+        Clear
+      </button>
+      <button class="btn btn-success" id="pasteBtn">
+        <i class="fa-solid fa-paste"></i>
+        Paste
+      </button>
+      <button class="btn btn-secondary" id="defangBtn">
+        <i class="fa-solid fa-link-slash"></i>
+        Defang
+      </button>
+      <button class="btn btn-secondary" id="fangBtn">
+        <i class="fa-solid fa-link"></i>
+        Fang
+      </button>
+    </div>
+
+    <div class="settings-row">
+      <label class="setting-item">
+        <input type="checkbox" id="autoAnalyzeToggle" checked>
+        <span class="checkmark"></span>
+        Auto-analyze IOCs
+      </label>
+    </div>
+
+    <!-- prefixes input moved to Snippets tab -->
+
+<div class="ioc-results" id="iocResults">
+  <!-- IOC Results Header -->
+  <div class="ioc-header">
+    <span class="ioc-count">IOC Results [0]</span>
+    <div class="ioc-controls">
+      <button class="btn btn-small" id="copyAllBtn">
+        <i class="fa-solid fa-copy"></i> Copy All
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-small" id="exportDropdown">
+          <i class="fa-solid fa-download"></i> Export ▼
+        </button>
+        <div class="dropdown-menu" id="exportMenu">
+          <button class="dropdown-item" data-export="csv">CSV</button>
+          <button class="dropdown-item" data-export="json">JSON</button>
+          <button class="dropdown-item" data-export="md">Markdown</button>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="btn btn-small" id="filterDropdown">
+          <i class="fa-solid fa-filter"></i> Filter ▼
+        </button>
+        <div class="dropdown-menu" id="filterMenu">
+          <button class="dropdown-item" data-filter="all">All</button>
+          <button class="dropdown-item" data-filter="ip">IPs</button>
+          <button class="dropdown-item" data-filter="domain">Domains</button>
+          <button class="dropdown-item" data-filter="url">URLs</button>
+          <button class="dropdown-item" data-filter="email">Emails</button>
+          <button class="dropdown-item" data-filter="hash">Hashes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IOC List -->
+  <div class="ioc-list">
+    <div class="ioc-item empty-state">
+      <i class="fa-solid fa-search"></i>
+      <div>No IOCs found. Run analysis above.</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="ioc-footer">
+    <label><input type="checkbox" id="selectAllIOCs"> Select All</label>
+    <div class="ioc-bulk-actions">
+      <button class="btn btn-secondary btn-small" id="copySelectedBtn"><i class="fa-regular fa-copy"></i> Copy Selected</button>
+      <button class="btn btn-secondary btn-small" id="exportSelectedBtn"><i class="fa-solid fa-download"></i> Export Selected</button>
+      <button class="btn btn-secondary btn-small" id="openVTSelectedBtn"><i class="fa-solid fa-shield-virus"></i> Open in VT</button>
+    </div>
+  </div>
+</div>
+
+  </div>
+  
+  <!-- Snippets Tab -->
+  <div class="tab-content" id="snippets-tab">
+    <input 
+      class="snippet-search" 
+      placeholder="🔍 Search snippets..."
+      id="snippetSearch">
+    
+    <div class="btn-group">
+      <button class="btn btn-primary btn-small" id="addSnippetBtn">
+        <i class="fa-solid fa-plus"></i>
+        Add New
+      </button>
+      <button class="btn btn-secondary btn-small" id="importBtn">
+        <i class="fa-solid fa-upload"></i>
+        Import
+      </button>
+      <button class="btn btn-secondary btn-small" id="exportBtn">
+        <i class="fa-solid fa-download"></i>
+        Export
+      </button>
+    </div>
+
+    <!-- Preset controls for snippet import/export -->
+    <div class="preset-controls" style="display:inline-flex; gap:6px; align-items:center; margin-left:8px;">
+      <select id="snippetPresetSelect" class="btn btn-small" title="Choose import/export preset">
+        <option value="internal">Internal (JSON)</option>
+        <option value="vscode">VSCode (code snippets)</option>
+      </select>
+      <select id="importModeSelect" class="btn btn-small" title="Import mode">
+        <option value="merge">Merge</option>
+        <option value="replace">Replace</option>
+      </select>
+    </div>
+    <div style="display:inline-flex; gap:8px; align-items:center; margin-left:12px;">
+      <label style="font-size:12px; color:#d1d5db;">Prefixes</label>
+      <input id="prefixesInput" type="text" placeholder="$,:" style="margin-left: 4px; padding:6px; border-radius:4px; border:1px solid #374151; background:#0b1220; color:#e5e7eb; width:120px; font-size:12px;">
+    </div>
+    
+    <div class="snippet-list" id="snippetList">
+      <div class="empty-state">
+        <i class="fa-solid fa-code"></i>
+        <div>No snippets found</div>
+        <div style="font-size: 11px; margin-top: 4px;">Create your first snippet to get started</div>
+      </div>
+    </div>
+
+    <!-- Inline snippet editor (hidden by default) -->
+    <div id="snippetEditor" style="display:none; position:relative; margin-top:12px; background:#0b1220; border:1px solid #374151; padding:12px; border-radius:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong style="color:#e5e7eb;">Snippet Editor</strong>
+        <div>
+          <button class="btn btn-secondary btn-small" id="snippetCancelBtn">Cancel</button>
+          <button class="btn btn-primary btn-small" id="snippetSaveBtn">Save</button>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input id="snippetNameInput" placeholder="Name" style="flex:1; padding:8px; border-radius:6px; border:1px solid #374151; background:#081023; color:#e5e7eb;">
+        <input id="snippetTriggerInput" placeholder="Trigger (e.g. $ex)" style="width:140px; padding:8px; border-radius:6px; border:1px solid #374151; background:#081023; color:#e5e7eb;">
+      </div>
+      <textarea id="snippetContentInput" placeholder="Content" style="width:100%; min-height:120px; padding:8px; border-radius:6px; border:1px solid #374151; background:#081023; color:#e5e7eb; font-family:monospace;"></textarea>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
