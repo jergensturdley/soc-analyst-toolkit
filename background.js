@@ -117,14 +117,22 @@ chrome.commands.onCommand.addListener((command) => {
     // Trigger snippet search in active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'triggerSnippetSearch' });
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'triggerSnippetSearch' }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('Snippet search trigger failed:', chrome.runtime.lastError.message);
+          }
+        });
       }
     });
   } else if (command === 'toggle-snippets') {
     // Toggle snippet expansion in active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleSnippets' });
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleSnippets' }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('Snippet toggle failed:', chrome.runtime.lastError.message);
+          }
+        });
       }
     });
   }

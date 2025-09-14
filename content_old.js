@@ -15,12 +15,9 @@
   let activeInput = null;
   let suggestionBox = null;
   let selectedIndex = -1;
-  const SUGGESTION_ID = 'soctoolkit-snippet-suggestions';
 
   // Listen for messages from the popup and background script
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('SOC Toolkit: Received message', request);
-    
     if (request.action === 'getSelectedText') {
       const selectedText = window.getSelection().toString().trim();
       sendResponse({ text: selectedText });
@@ -32,13 +29,11 @@
     }
 
     if (request.action === 'triggerSnippetSearch') {
-      console.log('SOC Toolkit: Triggering snippet search');
       triggerSnippetSearchAtCursor();
       sendResponse({ success: true });
     }
 
     if (request.action === 'toggleSnippets') {
-      console.log('SOC Toolkit: Toggling snippets');
       toggleSnippetExpansion();
       sendResponse({ success: true });
     }
@@ -173,6 +168,12 @@
         }
       }, 300);
     }, 3000);
+  }
+
+  // Auto-detect and highlight IOCs on page load (optional feature)
+  function autoDetectIOCs() {
+    // This could be enabled via settings
+    // For now, we'll keep it disabled to avoid performance issues
   }
 
   // ------------------ Global snippet controls ------------------
@@ -382,6 +383,7 @@
   }
 
   // ------------------ Snippet suggestions & expansion ------------------
+  const SUGGESTION_ID = 'soctoolkit-snippet-suggestions';
 
   function createSuggestionBox() {
     const existing = document.getElementById(SUGGESTION_ID);
@@ -403,186 +405,196 @@
     return box;
   }
 
-  function hideSuggestions() {
-    if (!suggestionBox) return;
-    suggestionBox.style.display = 'none';
-    suggestionBox.innerHTML = '';
-    selectedIndex = -1;
-  }
+    function hideSuggestions() {
+      if (!suggestionBox) return;
+      suggestionBox.style.display = 'none';
+      suggestionBox.innerHTML = '';
+      selectedIndex = -1;
+    }
 
-  function positionBoxFor(el) {
-    if (!suggestionBox) return;
-    const r = el.getBoundingClientRect();
-    suggestionBox.style.left = (window.scrollX + r.left) + 'px';
-    suggestionBox.style.top = (window.scrollY + r.bottom + 6) + 'px';
-    suggestionBox.style.width = Math.max(200, r.width) + 'px';
-  }
+    function positionBoxFor(el) {
+      if (!suggestionBox) return;
+      const r = el.getBoundingClientRect();
+      suggestionBox.style.left = (window.scrollX + r.left) + 'px';
+      suggestionBox.style.top = (window.scrollY + r.bottom + 6) + 'px';
+      suggestionBox.style.width = Math.max(200, r.width) + 'px';
+    }
 
-  function getTokenLeft(el) {
-    try {
+    function getTokenLeft(el) {
+      try {
+        if (el.isContentEditable) {
+          const sel = window.getSelection();
+          if (!sel || !sel.rangeCount) return { token: '', tokenStartOffset: 0 };
+          const range = sel.getRangeAt(0).cloneRange();
+          const preRange = range.cloneRange();
+          preRange.selectNodeContents(el);
+          preRange.setEnd(range.endContainer, range.endOffset);
+          const leftText = preRange.toString();
+          const m = leftText.match(/(\S+)$/);
+          return { token: m ? m[1] : '', tokenStartOffset: m ? leftText.lastIndexOf(m[1]) : 0 };
+        } else {
+          const pos = el.selectionStart ?? 0;
+          const start = Math.max(0, pos - 100);
+          const left = el.value.slice(start, pos);
+          const m = left.match(/(\S+)$/);
+          const token = m ? m[1] : '';
+          const tokenStart = start + (m ? left.lastIndexOf(m[1]) : 0);
+          return { token, tokenStart, pos };
+        }
+      } catch (e) {
+        return { token: '', tokenStart: 0 };
+      }
+    }
+
+    function filterMatches(token) {
+      if (!token) return [];
+      const q = token.toLowerCase();
+      return snippets.filter(s => (s.trigger || '').toLowerCase().startsWith(q));
+    }
+
+    function applySnippet(s, el, tokenStart) {
+      if (!el) return;
       if (el.isContentEditable) {
-        const sel = window.getSelection();
-        if (!sel || !sel.rangeCount) return { token: '', tokenStartOffset: 0 };
-        const range = sel.getRangeAt(0).cloneRange();
-        const preRange = range.cloneRange();
-        preRange.selectNodeContents(el);
-        preRange.setEnd(range.endContainer, range.endOffset);
-        const leftText = preRange.toString();
-        const m = leftText.match(/(\S+)$/);
-        return { token: m ? m[1] : '', tokenStartOffset: m ? leftText.lastIndexOf(m[1]) : 0 };
+        // Best-effort: insert text at caret
+        document.execCommand('insertText', false, s.content || '');
       } else {
-        const pos = el.selectionStart ?? 0;
-        const start = Math.max(0, pos - 100);
-        const left = el.value.slice(start, pos);
-        const m = left.match(/(\S+)$/);
-        const token = m ? m[1] : '';
-        const tokenStart = start + (m ? left.lastIndexOf(m[1]) : 0);
-        return { token, tokenStart, pos };
+        const value = el.value;
+        const before = value.slice(0, tokenStart);
+        const after = value.slice(el.selectionStart ?? 0);
+        el.value = before + (s.content || '') + after;
+        const newPos = (before + (s.content || '')).length;
+        el.selectionStart = el.selectionEnd = newPos;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
       }
-    } catch (e) {
-      return { token: '', tokenStart: 0 };
-    }
-  }
-
-  function filterMatches(token) {
-    if (!token) return [];
-    const q = token.toLowerCase();
-    return snippets.filter(s => (s.trigger || '').toLowerCase().startsWith(q));
-  }
-
-  function applySnippet(s, el, tokenStart) {
-    if (!el) return;
-    if (el.isContentEditable) {
-      // Best-effort: insert text at caret
-      document.execCommand('insertText', false, s.content || '');
-    } else {
-      const value = el.value;
-      const before = value.slice(0, tokenStart);
-      const after = value.slice(el.selectionStart ?? 0);
-      el.value = before + (s.content || '') + after;
-      const newPos = (before + (s.content || '')).length;
-      el.selectionStart = el.selectionEnd = newPos;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    hideSuggestions();
-  }
-
-  function renderMatches(matches, el, tokenStart) {
-    if (!suggestionBox) suggestionBox = createSuggestionBox();
-    suggestionBox.innerHTML = '';
-    matches.forEach((s, i) => {
-      const div = document.createElement('div');
-      div.className = 'soct-sugg';
-      div.style.padding = '8px 10px';
-      div.style.cursor = 'pointer';
-      div.textContent = `${s.trigger} — ${s.name}`;
-      div.addEventListener('mousedown', (ev) => {
-        ev.preventDefault();
-        applySnippet(s, el, tokenStart);
-      });
-      suggestionBox.appendChild(div);
-    });
-    positionBoxFor(el);
-    suggestionBox.style.display = matches.length ? 'block' : 'none';
-    selectedIndex = -1;
-  }
-
-  function onInputEvent(e) {
-    if (!snippetExpansionEnabled) return;
-    
-    const el = e.target;
-    activeInput = el;
-    if (el.type === 'password') return hideSuggestions();
-    const { token, tokenStart } = getTokenLeft(el);
-    if (!token) return hideSuggestions();
-    if (!prefixes.some(p => token.startsWith(p))) return hideSuggestions();
-    const matches = filterMatches(token);
-    if (!matches.length) return hideSuggestions();
-    renderMatches(matches, el, tokenStart);
-  }
-
-  function onKeydown(e) {
-    if (!snippetExpansionEnabled) return;
-    
-    if (!suggestionBox || suggestionBox.style.display === 'none') return;
-    const items = Array.from(suggestionBox.querySelectorAll('.soct-sugg'));
-    if (!items.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      selectedIndex = Math.min(items.length - 1, selectedIndex + 1);
-      items.forEach((it, idx) => it.style.background = idx === selectedIndex ? '#0b1220' : '');
-      items[selectedIndex].scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      selectedIndex = Math.max(0, selectedIndex - 1);
-      items.forEach((it, idx) => it.style.background = idx === selectedIndex ? '#0b1220' : '');
-      items[selectedIndex].scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'Enter' || e.key === 'Tab') {
-      e.preventDefault();
-      const sel = selectedIndex >= 0 ? selectedIndex : 0;
-      const text = items[sel].textContent.split(' — ')[0];
-      const s = snippets.find(sn => (sn.trigger || '').toLowerCase() === text.toLowerCase() || (sn.trigger || '').toLowerCase().startsWith(text.toLowerCase()));
-      if (s) {
-        const { tokenStart } = getTokenLeft(activeInput);
-        applySnippet(s, activeInput, tokenStart);
-      }
-    } else if (e.key === 'Escape') {
       hideSuggestions();
     }
-  }
 
-  function attachTo(el) {
-    if (!el || el._soct_attached) return;
-    el._soct_attached = true;
-    el.addEventListener('input', onInputEvent);
-    el.addEventListener('keydown', onKeydown);
-    el.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== el) hideSuggestions(); }, 150));
-  }
-
-  function scanAndAttach(root = document) {
-    const inputs = Array.from(root.querySelectorAll('input[type=text], input:not([type]), input[type=search], input[type=url], input[type=email], textarea, [contenteditable="true"], [contenteditable=""], [role="textbox"]'));
-    inputs.forEach(attachTo);
-    
-    // Also try to attach to any element that might be editable
-    const potentialInputs = Array.from(root.querySelectorAll('div, span, p')).filter(el => {
-      return el.isContentEditable || 
-             el.getAttribute('contenteditable') === 'true' ||
-             el.getAttribute('role') === 'textbox' ||
-             el.classList.contains('ace_text-input') || // Code editors
-             el.classList.contains('monaco-editor') ||
-             el.classList.contains('CodeMirror-code');
-    });
-    potentialInputs.forEach(attachTo);
-  }
-
-  function loadSnippetsAndPrefixes(cb) {
-    try {
-      chrome.storage.local.get(['snippets','socSettings'], (res) => {
-        snippets = Array.isArray(res.snippets) ? res.snippets : [];
-        const s = res.socSettings || {};
-        prefixes = Array.isArray(s.snippetPrefixes) ? s.snippetPrefixes : (s.snippetPrefixes ? s.snippetPrefixes : ['$']);
-        if (typeof prefixes === 'string') prefixes = prefixes.split(',').map(p => p.trim()).filter(Boolean);
-        if (cb) cb();
+    function renderMatches(matches, el, tokenStart) {
+      if (!suggestionBox) suggestionBox = createSuggestionBox();
+      suggestionBox.innerHTML = '';
+      matches.forEach((s, i) => {
+        const div = document.createElement('div');
+        div.className = 'soct-sugg';
+        div.style.padding = '8px 10px';
+        div.style.cursor = 'pointer';
+        div.textContent = `${s.trigger} — ${s.name}`;
+        div.addEventListener('mousedown', (ev) => {
+          ev.preventDefault();
+          applySnippet(s, el, tokenStart);
+        });
+        suggestionBox.appendChild(div);
       });
-    } catch (e) {
-      snippets = [];
-      prefixes = ['$'];
-      if (cb) cb();
+      positionBoxFor(el);
+      suggestionBox.style.display = matches.length ? 'block' : 'none';
+      selectedIndex = -1;
     }
-  }
+
+    function onInputEvent(e) {
+      if (!snippetExpansionEnabled) return;
+      
+      const el = e.target;
+      activeInput = el;
+      if (el.type === 'password') return hideSuggestions();
+      const { token, tokenStart } = getTokenLeft(el);
+      if (!token) return hideSuggestions();
+      if (!prefixes.some(p => token.startsWith(p))) return hideSuggestions();
+      const matches = filterMatches(token);
+      if (!matches.length) return hideSuggestions();
+      renderMatches(matches, el, tokenStart);
+    }
+
+    function onKeydown(e) {
+      if (!snippetExpansionEnabled) return;
+      
+      if (!suggestionBox || suggestionBox.style.display === 'none') return;
+      const items = Array.from(suggestionBox.querySelectorAll('.soct-sugg'));
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(items.length - 1, selectedIndex + 1);
+        items.forEach((it, idx) => it.style.background = idx === selectedIndex ? '#0b1220' : '');
+        items[selectedIndex].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(0, selectedIndex - 1);
+        items.forEach((it, idx) => it.style.background = idx === selectedIndex ? '#0b1220' : '');
+        items[selectedIndex].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const sel = selectedIndex >= 0 ? selectedIndex : 0;
+        const text = items[sel].textContent.split(' — ')[0];
+        const s = snippets.find(sn => (sn.trigger || '').toLowerCase() === text.toLowerCase() || (sn.trigger || '').toLowerCase().startsWith(text.toLowerCase()));
+        if (s) {
+          const { tokenStart } = getTokenLeft(activeInput);
+          applySnippet(s, activeInput, tokenStart);
+        }
+      } else if (e.key === 'Escape') {
+        hideSuggestions();
+      }
+    }
+
+    function attachTo(el) {
+      if (!el || el._soct_attached) return;
+      el._soct_attached = true;
+      el.addEventListener('input', onInputEvent);
+      el.addEventListener('keydown', onKeydown);
+      el.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== el) hideSuggestions(); }, 150));
+    }
+
+    function scanAndAttach(root = document) {
+      const inputs = Array.from(root.querySelectorAll('input[type=text], input:not([type]), input[type=search], input[type=url], input[type=email], textarea, [contenteditable="true"], [contenteditable=""], [role="textbox"]'));
+      inputs.forEach(attachTo);
+      
+      // Also try to attach to any element that might be editable
+      const potentialInputs = Array.from(root.querySelectorAll('div, span, p')).filter(el => {
+        return el.isContentEditable || 
+               el.getAttribute('contenteditable') === 'true' ||
+               el.getAttribute('role') === 'textbox' ||
+               el.classList.contains('ace_text-input') || // Code editors
+               el.classList.contains('monaco-editor') ||
+               el.classList.contains('CodeMirror-code');
+      });
+      potentialInputs.forEach(attachTo);
+    }
+
+    function loadSnippetsAndPrefixes(cb) {
+      try {
+        chrome.storage.local.get(['snippets','socSettings'], (res) => {
+          snippets = Array.isArray(res.snippets) ? res.snippets : [];
+          const s = res.socSettings || {};
+          prefixes = Array.isArray(s.snippetPrefixes) ? s.snippetPrefixes : (s.snippetPrefixes ? s.snippetPrefixes : ['$']);
+          if (typeof prefixes === 'string') prefixes = prefixes.split(',').map(p => p.trim()).filter(Boolean);
+          if (cb) cb();
+        });
+      } catch (e) {
+        snippets = [];
+        prefixes = ['$'];
+        if (cb) cb();
+      }
+    }
+
+    suggestionBox = createSuggestionBox();
+    loadSnippetsAndPrefixes(() => {
+      scanAndAttach();
+      const obs = new MutationObserver(() => { scanAndAttach(document); });
+      obs.observe(document.documentElement, { childList: true, subtree: true });
+      // Update snippets when storage changes
+      chrome.storage.onChanged.addListener((changes) => {
+        if (changes.snippets || changes.socSettings) {
+          loadSnippetsAndPrefixes(() => {});
+        }
+      });
+    });
 
   // Initialize snippet system
-  console.log('SOC Toolkit: Initializing snippet system');
   suggestionBox = createSuggestionBox();
   loadSnippetsAndPrefixes(() => {
-    console.log('SOC Toolkit: Loaded', snippets.length, 'snippets with prefixes:', prefixes);
     scanAndAttach();
     const obs = new MutationObserver(() => { scanAndAttach(document); });
     obs.observe(document.documentElement, { childList: true, subtree: true });
     // Update snippets when storage changes
     chrome.storage.onChanged.addListener((changes) => {
       if (changes.snippets || changes.socSettings) {
-        console.log('SOC Toolkit: Storage changed, reloading snippets');
         loadSnippetsAndPrefixes(() => {});
       }
     });
