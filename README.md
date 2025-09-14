@@ -3,9 +3,9 @@
 
 A comprehensive Chrome extension for SOC analysts featuring IOC analysis and a popup-based snippet library for search and copy.
 
-## 🚀 Features
+## Features
 
-### 🔍 IOC Analysis
+### IOC Analysis
 
 - **Intelligent IOC Extraction**: Automatically detects IPs, domains, URLs, emails, and file hashes
 - **OSINT Integration**: One-click links to VirusTotal, Hybrid Analysis, URLVoid, and more
@@ -14,28 +14,26 @@ A comprehensive Chrome extension for SOC analysts featuring IOC analysis and a p
 - **Copy & Export**: Easy copying and bulk export in multiple formats
 
 
-### 📝 Snippet Library (Popup Only)
+### Snippet Library (Popup Only)
 
 - **Popup-Based Snippet Search**: Access your snippet library from the extension popup
 - **Search & Copy**: Search snippets and click to copy to clipboard
-- **Custom Triggers**: Organize snippets with triggers and prefixes (default: `$` and `:`)
-- **Variable Replacement**: Dynamic content with date/time variables
 - **Import/Export**: Share snippet collections with your team
 
 
-### 🌐 Compatibility
+### Compatibility
 
 - IOC analysis and snippet library available in the extension popup
 - Works in Chrome and Chromium-based browsers
 
-## 📦 Installation
+## Installation
 
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode" (top right toggle)
 3. Click "Load unpacked" and select the extension folder
 4. Pin the extension to your toolbar for easy access
 
-## 🎯 Usage Examples
+## Usage Examples
 
 ### IOC Analysis Examples
 
@@ -269,39 +267,11 @@ SOC Team
 ```
 
 
-## ⌨️ Keyboard Shortcuts
-
-- `Ctrl+Shift+S` (or `Cmd+Shift+S`): Open SOC Toolkit popup
-
-## 🔧 Configuration
-
-
-### Snippet Prefixes
-
-Customize trigger prefixes in the Snippets tab:
-
-- Default: `$` and `:`
-- Examples: `$incident`, `:template`, `#snippet`
-
-### Auto-Analysis
-
-Enable/disable automatic IOC analysis as you type in the IOC Analysis tab.
-
-## 🤝 Team Collaboration
-
 ### Sharing Snippets
 
 1. Export your snippet collection using the Export button
 2. Share the JSON file with team members
 3. Team members can import using the Import button
-
-### Standardized Templates
-
-Use consistent snippet triggers across your team:
-
-- `$incident-*` for incident response templates
-- `$analysis-*` for analysis reports
-- `$comm-*` for communication templates
 
 
 ## 🛠️ Technical Details
@@ -312,39 +282,22 @@ Use consistent snippet triggers across your team:
 - **Storage**: Local browser storage (secure and private)
 - **Performance**: Lightweight with minimal memory footprint
 
-## 🔒 Privacy & Security
+## Privacy & Security
 
 - All data stored locally in your browser
 - No external data transmission
 - No telemetry or tracking
 - Open source for transparency and security review
 
-## 📈 Updates & Roadmap
+## Contributing
 
-
-### Recent Enhancements
-
-- ✅ Improved popup sizing
-- ✅ Enhanced IOC parsing
-- ✅ Popup-based snippet search/copy
-
-
-### Planned Features
-
-- 🔄 Team snippet synchronization
-- 🔄 Custom OSINT source integration
-- 🔄 Advanced IOC correlation
-- 🔄 Threat hunting templates
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [GitHub repository](https://github.com/jergensturdley/soc-analyst-toolkit) for:
+We welcome contributions!
 
 - Bug reports
 - Feature requests
 - Code contributions
 - Documentation improvements
 
-## 📄 License
+## License
 
 This project is open source. See the LICENSE file for details.
