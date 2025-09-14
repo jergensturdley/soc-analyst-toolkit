@@ -5,7 +5,8 @@ class SOCToolkit {
     this.currentTab = 'ioc';
     this.snippets = [];
     this.autoAnalyze = true;
-  this.snippetPrefixes = ['$', ':']; // default (note: trimmed later)
+  // Prefixes are now fixed and not user-editable
+  this.snippetPrefixes = ['$', ':'];
     this.floatMode = false;
     this.init();
   }
@@ -60,16 +61,7 @@ class SOCToolkit {
         });
       }
 
-      // Load prefixes input and wire change (element is in Snippets tab)
-      const prefInput = document.getElementById('prefixesInput');
-      if (prefInput) {
-        prefInput.value = (this.snippetPrefixes || ['$']).join(',');
-        prefInput.addEventListener('change', (e) => {
-          const raw = (e.target.value || '').split(',').map(s => s.trim()).filter(Boolean);
-          this.snippetPrefixes = raw.length ? raw : ['$'];
-          this.saveSettings();
-        });
-      }
+
 
       // Snippet editor buttons (save/cancel)
       const saveBtn = document.getElementById('snippetSaveBtn');
@@ -77,64 +69,7 @@ class SOCToolkit {
       if (saveBtn) saveBtn.addEventListener('click', () => this.saveSnippetFromEditor());
       if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeSnippetEditor());
 
-      if (iocInput) {
-        iocInput.addEventListener('input', () => {
-          // Always update snippet suggestions regardless of autoAnalyze setting
-          try { this.updateSnippetSuggestions(iocInput); } catch (err) {}
-          // Auto-analysis (debounced)
-          clearTimeout(autoAnalyzeTimeout);
-          if (this.autoAnalyze) {
-            autoAnalyzeTimeout = setTimeout(() => {
-              if (iocInput.value.trim()) {
-                this.analyzeIOCs();
-              } else {
-                this.clearIOCs();
-              }
-            }, 500);
-          }
-        });
-        // Snippet trigger expansion in the IOC input: Tab or Enter/Space will try to expand a matching trigger
-        iocInput.addEventListener('keydown', (e) => {
-          try {
-            if (e.key === 'Tab') {
-              // Prevent focus change
-              e.preventDefault();
-              const expanded = this.tryExpandSnippetAtCaret(iocInput);
-              if (!expanded) {
-                // If no expansion, but suggestions visible, pick first suggestion
-                const ss = document.getElementById('snippetSuggestions');
-                if (ss && ss.querySelector('.suggestion')) {
-                  ss.querySelector('.suggestion').click();
-                }
-              }
-            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-              // Navigate suggestions
-              const ss = document.getElementById('snippetSuggestions');
-              if (ss && ss.classList.contains('active')) {
-                e.preventDefault();
-                this.navigateSuggestions(e.key === 'ArrowDown' ? 1 : -1);
-              }
-            } else if (e.key === 'Escape') {
-              this.hideSnippetSuggestions();
-            } else if (e.key === 'Enter' || e.key === ' ') {
-              const ss = document.getElementById('snippetSuggestions');
-              if (ss && ss.classList.contains('active')) {
-                // If a suggestion is selected, activate it
-                const sel = ss.querySelector('.suggestion.selected') || ss.querySelector('.suggestion');
-                if (sel) {
-                  e.preventDefault();
-                  sel.click();
-                  return;
-                }
-              }
-              // Let the key event finish (Enter/Space may insert), then check for expansion
-              setTimeout(() => this.tryExpandSnippetAtCaret(iocInput), 0);
-            }
-          } catch (err) {
-            // ignore
-          }
-        });
-      }
+      // Remove snippet trigger/expansion and auto-populate logic. Only snippet search/copy remains.
 
     // Snippet functionality
   el('snippetSearch')?.addEventListener('input', (e) => this.searchSnippets(e.target.value));

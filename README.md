@@ -1,6 +1,7 @@
+
 # SOC Analyst Toolkit - Chrome Extension
 
-A comprehensive Chrome extension for SOC analysts featuring IOC analysis, snippet management, and browser-wide text expansion capabilities.
+A comprehensive Chrome extension for SOC analysts featuring IOC analysis and a popup-based snippet library for search and copy.
 
 ## 🚀 Features
 
@@ -12,21 +13,20 @@ A comprehensive Chrome extension for SOC analysts featuring IOC analysis, snippe
 - **Multi-layer Decoding**: Handles complex URL encoding and embedded URLs
 - **Copy & Export**: Easy copying and bulk export in multiple formats
 
-### 📝 Enhanced Snippet Management
 
-- **Browser-Wide Expansion**: Snippets work in any input field across all websites
-- **Global Keyboard Shortcuts**:
-  - `Ctrl+Shift+Space`: Show snippet overlay anywhere
-  - `Ctrl+Shift+T`: Toggle snippet expansion on/off
-- **Smart Triggers**: Customizable prefixes (default: `$` and `:`)
+### 📝 Snippet Library (Popup Only)
+
+- **Popup-Based Snippet Search**: Access your snippet library from the extension popup
+- **Search & Copy**: Search snippets and click to copy to clipboard
+- **Custom Triggers**: Organize snippets with triggers and prefixes (default: `$` and `:`)
 - **Variable Replacement**: Dynamic content with date/time variables
 - **Import/Export**: Share snippet collections with your team
 
-### 🌐 Universal Compatibility
 
-- Works in Gmail, Slack, JIRA, ticketing systems, and any web application
-- Supports standard inputs, textareas, and contenteditable elements
-- Compatible with popular code editors (Monaco, Ace, CodeMirror)
+### 🌐 Compatibility
+
+- IOC analysis and snippet library available in the extension popup
+- Works in Chrome and Chromium-based browsers
 
 ## 📦 Installation
 
@@ -268,13 +268,13 @@ Best regards,
 SOC Team
 ```
 
+
 ## ⌨️ Keyboard Shortcuts
 
-- `Ctrl+Shift+S` (or `Cmd+Shift+S`): Open SOC Toolkit
-- `Ctrl+Shift+Space`: Show snippet overlay (works anywhere)
-- `Ctrl+Shift+T`: Toggle snippet expansion on/off
+- `Ctrl+Shift+S` (or `Cmd+Shift+S`): Open SOC Toolkit popup
 
 ## 🔧 Configuration
+
 
 ### Snippet Prefixes
 
@@ -303,6 +303,7 @@ Use consistent snippet triggers across your team:
 - `$analysis-*` for analysis reports
 - `$comm-*` for communication templates
 
+
 ## 🛠️ Technical Details
 
 - **Manifest Version**: 3 (Latest Chrome extension standard)
@@ -320,12 +321,13 @@ Use consistent snippet triggers across your team:
 
 ## 📈 Updates & Roadmap
 
+
 ### Recent Enhancements
 
-- ✅ Browser-wide snippet expansion
-- ✅ Global keyboard shortcuts
 - ✅ Improved popup sizing
 - ✅ Enhanced IOC parsing
+- ✅ Popup-based snippet search/copy
+
 
 ### Planned Features
 

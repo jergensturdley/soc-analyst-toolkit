@@ -55,13 +55,7 @@
       },
       "description": "Open SOC Analyst Toolkit"
     },
-    "trigger-snippet-search": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+Space",
-        "mac": "Command+Shift+Space"
-      },
-      "description": "Show snippet suggestions at cursor"
-    },
+    
     "toggle-snippets": {
       "suggested_key": {
         "default": "Ctrl+Shift+T",

@@ -113,17 +113,6 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === '_execute_action') {
     // Handle keyboard shortcut
     chrome.action.openPopup();
-  } else if (command === 'trigger-snippet-search') {
-    // Trigger snippet search in active tab
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'triggerSnippetSearch' }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('Snippet search trigger failed:', chrome.runtime.lastError.message);
-          }
-        });
-      }
-    });
   } else if (command === 'toggle-snippets') {
     // Toggle snippet expansion in active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
