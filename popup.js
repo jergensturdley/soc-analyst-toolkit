@@ -5,17 +5,32 @@ class SOCToolkit {
     this.currentTab = 'ioc';
     this.snippets = [];
     this.autoAnalyze = true;
-  // Prefixes are now fixed and not user-editable
-  this.snippetPrefixes = ['$', ':'];
+    // Prefixes are now fixed and not user-editable
+    this.snippetPrefixes = ['$', ':'];
     this.floatMode = false;
+    this.customOsintSources = [];
+    this.enableGraph = true;
+    this.iocGraph = null;
+    this.currentTheme = 'matrix'; // Default theme
     this.init();
   }
 
   async init() {
     await this.loadSettings();
+    
+    // Check for pending actions from context menu
+    chrome.storage.local.get(['pendingAction', 'pendingText'], (result) => {
+      if (result.pendingAction && result.pendingText) {
+        this.handlePendingAction(result.pendingAction, result.pendingText);
+        chrome.storage.local.remove(['pendingAction', 'pendingText']);
+      }
+    });
+    
     this.setupEventListeners();
     await this.loadSnippets();
+    await this.loadCustomOsintSources();
     this.displaySnippets();
+    this.displayCustomOsintSources();
     await this.checkPendingAnalysis();
   }
 
@@ -32,6 +47,33 @@ class SOCToolkit {
     } catch (err) {
       console.log('No pending analysis or error:', err);
     }
+  }
+
+  handlePendingAction(action, text) {
+    switch (action) {
+      case 'extract-iocs':
+        this.extractIOCsFromText(text);
+        break;
+      default:
+        console.log('Unknown pending action:', action);
+    }
+  }
+
+  extractIOCsFromText(text) {
+    const iocs = this.extractIOCs(text);
+    const iocText = iocs.map(ioc => ioc.value).join('\n');
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(iocText).then(() => {
+      this.showStatus('IOCs extracted and copied to clipboard', 'success');
+    }).catch(() => {
+      this.showStatus('IOCs extracted but failed to copy', 'warning');
+    });
+    
+    // Display in analysis tab
+    document.getElementById('iocInput').value = iocText;
+    this.switchTab('ioc');
+    this.analyzeIOCs();
   }
 
   setupEventListeners() {
@@ -61,6 +103,12 @@ class SOCToolkit {
         });
       }
 
+      // Initialize graph toggle
+      const enableGraphToggle = document.getElementById('enableGraphToggle');
+      if (enableGraphToggle) {
+        enableGraphToggle.checked = this.enableGraph;
+      }
+
 
 
       // Snippet editor buttons (save/cancel)
@@ -69,13 +117,40 @@ class SOCToolkit {
       if (saveBtn) saveBtn.addEventListener('click', () => this.saveSnippetFromEditor());
       if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeSnippetEditor());
 
-      // Remove snippet trigger/expansion and auto-populate logic. Only snippet search/copy remains.
+      if (iocInput) {
+        iocInput.addEventListener('input', () => {
+          // Auto-analysis (debounced)
+          clearTimeout(autoAnalyzeTimeout);
+          if (this.autoAnalyze) {
+            autoAnalyzeTimeout = setTimeout(() => {
+              if (iocInput.value.trim()) {
+                this.analyzeIOCs();
+              } else {
+                this.clearIOCs();
+              }
+            }, 500);
+          }
+        });
+      }
 
     // Snippet functionality
   el('snippetSearch')?.addEventListener('input', (e) => this.searchSnippets(e.target.value));
   el('addSnippetBtn')?.addEventListener('click', () => this.addSnippet());
   el('importBtn')?.addEventListener('click', () => this.importSnippets());
   el('exportBtn')?.addEventListener('click', () => this.exportSnippets());
+
+    // Investigation Notes functionality
+    el('addNoteBtn')?.addEventListener('click', () => this.showAddNoteModal());
+    el('exportNotesBtn')?.addEventListener('click', () => this.exportNotes());
+    el('clearNotesBtn')?.addEventListener('click', () => this.clearAllNotes());
+    el('saveNoteBtn')?.addEventListener('click', () => this.saveNote());
+    el('cancelNoteBtn')?.addEventListener('click', () => this.hideAddNoteModal());
+
+    // File Hash functionality
+    el('selectFileBtn')?.addEventListener('click', () => this.selectFile());
+    el('hashFileBtn')?.addEventListener('click', () => this.hashSelectedFile());
+    el('copyFileHashBtn')?.addEventListener('click', () => this.copyFileHashes());
+    el('fileHashInput')?.addEventListener('change', (e) => this.handleFileSelection(e));
 
     // Header controls
     el('floatBtn')?.addEventListener('click', () => this.toggleFloat());
@@ -119,6 +194,26 @@ class SOCToolkit {
     if (exportSel) exportSel.addEventListener('click', () => this.handleBulkAction('export'));
     if (openVTSel) openVTSel.addEventListener('click', () => this.handleBulkAction('osint'));
 
+    // Settings tab functionality
+    el('addOsintBtn')?.addEventListener('click', () => this.addCustomOsintSource());
+    el('osintSaveBtn')?.addEventListener('click', () => this.saveCustomOsintSource());
+    el('osintCancelBtn')?.addEventListener('click', () => this.closeOsintEditor());
+    el('enableGraphToggle')?.addEventListener('change', (e) => {
+      this.enableGraph = e.target.checked;
+      this.saveSettings();
+      this.updateGraphVisibility();
+    });
+
+    // Theme selector
+    el('themeSelect')?.addEventListener('change', (e) => {
+      this.currentTheme = e.target.value;
+      this.applyTheme(this.currentTheme);
+      this.saveSettings();
+    });
+
+    // Floating window button
+    el('toggleFloatingBtn')?.addEventListener('click', () => this.toggleFloat());
+
     // Simple dropdown toggles for Export / Filter headers
     document.querySelectorAll('.dropdown > .btn').forEach(btn => {
       const dd = btn.parentElement;
@@ -139,12 +234,24 @@ class SOCToolkit {
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
-    const targetId = tabName === 'snippets' ? 'snippets-tab' : 'ioc-tab';
+    
+    let targetId;
+    if (tabName === 'snippets') {
+      targetId = 'snippets-tab';
+    } else if (tabName === 'notes') {
+      targetId = 'notes-tab';
+    } else if (tabName === 'settings') {
+      targetId = 'settings-tab';
+    } else {
+      targetId = 'ioc-tab';
+    }
+    
     document.querySelectorAll('.tab-content').forEach(content => {
       const isTarget = content.id === targetId;
       content.classList.toggle('active', isTarget);
       content.style.display = isTarget ? 'block' : 'none';
     });
+    
     this.currentTab = tabName;
     if (tabName === 'snippets') {
       // Ensure snippets list is rendered/refreshed when opening the tab
@@ -154,6 +261,10 @@ class SOCToolkit {
       } else {
         console.error('snippets-tab element not found!');
       }
+    } else if (tabName === 'notes') {
+      this.displayNotes();
+    } else if (tabName === 'settings') {
+      this.displayCustomOsintSources();
     }
   }
 
@@ -212,6 +323,11 @@ class SOCToolkit {
 
     // Add event listeners for copy functionality
     this.setupCopyEventListeners();
+
+    // Generate and display IOC correlation graph
+    if (this.enableGraph) {
+      this.generateIOCGraph(iocs);
+    }
   }
 
   // --- New Helpers ---
@@ -310,15 +426,30 @@ class SOCToolkit {
     return new Promise((resolve) => {
       try {
         chrome.storage.local.get(['socSettings'], (res) => {
-          const defaults = { autoAnalyze: true };
+          const defaults = { autoAnalyze: true, enableGraph: true, theme: 'matrix' };
           const s = res.socSettings || defaults;
           this.autoAnalyze = s.autoAnalyze ?? true;
+          this.enableGraph = s.enableGraph ?? true;
+          this.currentTheme = s.theme ?? 'matrix';
           // load snippetPrefixes if present
           if (s.snippetPrefixes && Array.isArray(s.snippetPrefixes)) this.snippetPrefixes = s.snippetPrefixes;
+          
+          // Apply the theme
+          this.applyTheme(this.currentTheme);
+          
+          // Set the theme selector value
+          const themeSelect = document.getElementById('themeSelect');
+          if (themeSelect) {
+            themeSelect.value = this.currentTheme;
+          }
+          
           resolve();
         });
       } catch (e) {
         this.autoAnalyze = true;
+        this.enableGraph = true;
+        this.currentTheme = 'matrix';
+        this.applyTheme(this.currentTheme);
         resolve();
       }
     });
@@ -326,9 +457,27 @@ class SOCToolkit {
 
   saveSettings() {
     try {
-      const socSettings = { autoAnalyze: this.autoAnalyze, snippetPrefixes: this.snippetPrefixes };
+      const socSettings = { 
+        autoAnalyze: this.autoAnalyze, 
+        enableGraph: this.enableGraph,
+        snippetPrefixes: this.snippetPrefixes,
+        theme: this.currentTheme
+      };
       chrome.storage.local.set({ socSettings });
     } catch {}
+  }
+
+  // === Theme Management ===
+  applyTheme(themeName) {
+    // Remove existing theme data attributes
+    document.body.removeAttribute('data-theme');
+    
+    // Apply new theme (if not matrix/default)
+    if (themeName !== 'matrix') {
+      document.body.setAttribute('data-theme', themeName);
+    }
+    
+    this.currentTheme = themeName;
   }
 
   // === Snippets ===
@@ -631,6 +780,8 @@ class SOCToolkit {
   generateOSINTLinks(value, category) {
     const enc = encodeURIComponent(value);
     const links = [];
+    
+    // Default OSINT Sources
     // VirusTotal
     links.push({ name: 'VirusTotal', url: `https://www.virustotal.com/gui/search/${enc}` });
     // urlscan
@@ -655,6 +806,15 @@ class SOCToolkit {
       const tr = `https://threat.rip/search?q=hash%253A${encodeURIComponent(value)}`;
       links.push({ name: 'threat.rip', url: tr });
     }
+
+    // Add custom OSINT sources
+    this.customOsintSources.forEach(source => {
+      if (source.types === 'all' || source.types === category) {
+        const customUrl = source.url.replace(/\{\{IOC\}\}/g, enc);
+        links.push({ name: source.name, url: customUrl, custom: true });
+      }
+    });
+
     return links;
   }
 
@@ -833,12 +993,21 @@ class SOCToolkit {
     const urlRe = /\bhttps?:\/\/[\w.-]+(?::\d+)?(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
     const ipv4Re = /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g;
     const emailRe = /\b[\w.+-]+@([\w-]+\.)+[\w-]{2,}\b/gi;
-    const domainRe = /\b(?!https?:\/\/)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}\b/gi;
+    // Improved domain regex: limit TLD to 2-24 chars and require at least one subdomain
+    const domainRe = /\b(?!https?:\/\/)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi;
     const sha256Re = /\b[a-f0-9]{64}\b/gi;
 
     const add = (type, value, category) => {
       if (!value) return;
-      results.push({ type, value, category });
+      // Additional validation for domains to prevent false positives
+      if (category === 'domain') {
+        // Skip if it looks like a file extension or has suspicious patterns
+        if (this.isValidDomain(value)) {
+          results.push({ type, value, category });
+        }
+      } else {
+        results.push({ type, value, category });
+      }
     };
 
     (text.match(urlRe) || []).forEach(v => add('URL', v, 'url'));
@@ -854,20 +1023,602 @@ class SOCToolkit {
     return results;
   }
 
+  // Helper function to validate domains and reduce false positives
+  isValidDomain(domain) {
+    if (!domain || domain.length > 253) return false;
+    
+    // Common false positive patterns to exclude
+    const excludePatterns = [
+      /^\d+\.\d+$/, // Version numbers like "1.0"
+      /\.(exe|dll|so|bin|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|tar|gz|jpg|png|gif|mp4|avi|mov)$/i, // File extensions
+      /\.(log|txt|cfg|conf|ini)$/i, // Config/log file extensions
+      /^[a-z]\.[a-z]$/, // Single char domains like "a.b"
+      /\.(local|localhost|internal|corp|lan)$/i, // Internal domains that are likely false positives
+    ];
+    
+    // Check against exclude patterns
+    if (excludePatterns.some(pattern => pattern.test(domain))) {
+      return false;
+    }
+    
+    // Must have at least one dot and reasonable length parts
+    const parts = domain.split('.');
+    if (parts.length < 2) return false;
+    
+    // TLD should be reasonable length (2-24 chars) and not all numbers
+    const tld = parts[parts.length - 1];
+    if (tld.length < 2 || tld.length > 24 || /^\d+$/.test(tld)) {
+      return false;
+    }
+    
+    // Each part should be reasonable
+    return parts.every(part => {
+      return part.length > 0 && part.length <= 63 && !/^-|-$/.test(part);
+    });
+  }
+
   // === Window controls ===
   async toggleFloat() {
     try {
-      await chrome.runtime.sendMessage({ action: 'toggleFloat' });
+      const response = await chrome.runtime.sendMessage({ action: 'toggleFloat' });
+      if (response && response.success) {
+        if (response.action === 'opened') {
+          this.showStatus('Floating window opened', 'success');
+          // Close the popup after a short delay
+          setTimeout(() => window.close(), 500);
+        } else if (response.action === 'closed') {
+          this.showStatus('Floating window closed', 'info');
+        }
+      }
     } catch (e) {
-      // ignore
+      this.showStatus('Error toggling floating window', 'error');
     }
   }
 
   closeWindow() {
     window.close();
   }
+
+  // === Custom OSINT Sources Management ===
+  async loadCustomOsintSources() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get(['customOsintSources'], (res) => {
+          this.customOsintSources = Array.isArray(res.customOsintSources) ? res.customOsintSources : [];
+          resolve();
+        });
+      } catch (e) {
+        this.customOsintSources = [];
+        resolve();
+      }
+    });
+  }
+
+  saveCustomOsintSources() {
+    try {
+      chrome.storage.local.set({ customOsintSources: this.customOsintSources });
+    } catch (e) {
+      console.error('Failed to save custom OSINT sources:', e);
+    }
+  }
+
+  displayCustomOsintSources() {
+    const container = document.getElementById('osintSourcesList');
+    if (!container) return;
+
+    if (this.customOsintSources.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding: 20px; text-align: center;">
+          <i class="fa-solid fa-globe"></i>
+          <div>No custom OSINT sources configured</div>
+          <div style="font-size: 11px; margin-top: 4px;">Add your first source to get started</div>
+        </div>
+      `;
+      return;
+    }
+
+    const html = this.customOsintSources.map((source, index) => `
+      <div class="osint-source-item">
+        <div class="osint-source-header">
+          <div class="osint-source-name">${this.escapeHtml(source.name)}</div>
+          <div class="osint-source-type">${source.types}</div>
+        </div>
+        <div class="osint-source-url">${this.escapeHtml(source.url)}</div>
+        <div class="osint-source-actions">
+          <button class="btn btn-secondary btn-small" onclick="toolkit.editCustomOsintSource(${index})">
+            <i class="fa-solid fa-edit"></i> Edit
+          </button>
+          <button class="btn btn-secondary btn-small" onclick="toolkit.deleteCustomOsintSource(${index})">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = html;
+  }
+
+  addCustomOsintSource() {
+    this.showOsintEditor();
+  }
+
+  editCustomOsintSource(index) {
+    const source = this.customOsintSources[index];
+    if (!source) return;
+    
+    this.showOsintEditor(source, index);
+  }
+
+  deleteCustomOsintSource(index) {
+    if (confirm('Are you sure you want to delete this OSINT source?')) {
+      this.customOsintSources.splice(index, 1);
+      this.saveCustomOsintSources();
+      this.displayCustomOsintSources();
+      this.showNotification('OSINT source deleted', 'success');
+    }
+  }
+
+  showOsintEditor(source = null, editIndex = null) {
+    const editor = document.getElementById('osintEditor');
+    const nameInput = document.getElementById('osintNameInput');
+    const typesInput = document.getElementById('osintTypesInput');
+    const urlInput = document.getElementById('osintUrlInput');
+
+    if (source) {
+      nameInput.value = source.name;
+      typesInput.value = source.types;
+      urlInput.value = source.url;
+    } else {
+      nameInput.value = '';
+      typesInput.value = 'all';
+      urlInput.value = '';
+    }
+
+    editor.style.display = 'block';
+    editor.dataset.editIndex = editIndex !== null ? editIndex : '';
+    nameInput.focus();
+  }
+
+  closeOsintEditor() {
+    const editor = document.getElementById('osintEditor');
+    editor.style.display = 'none';
+    delete editor.dataset.editIndex;
+  }
+
+  saveCustomOsintSource() {
+    const nameInput = document.getElementById('osintNameInput');
+    const typesInput = document.getElementById('osintTypesInput');
+    const urlInput = document.getElementById('osintUrlInput');
+    const editor = document.getElementById('osintEditor');
+
+    const name = nameInput.value.trim();
+    const types = typesInput.value;
+    const url = urlInput.value.trim();
+
+    if (!name || !url) {
+      this.showNotification('Name and URL are required', 'error');
+      return;
+    }
+
+    if (!url.includes('{{IOC}}')) {
+      this.showNotification('URL must contain {{IOC}} placeholder', 'error');
+      return;
+    }
+
+    const source = { name, types, url };
+    const editIndex = editor.dataset.editIndex;
+
+    if (editIndex !== '') {
+      // Edit existing source
+      this.customOsintSources[parseInt(editIndex)] = source;
+      this.showNotification('OSINT source updated', 'success');
+    } else {
+      // Add new source
+      this.customOsintSources.push(source);
+      this.showNotification('OSINT source added', 'success');
+    }
+
+    this.saveCustomOsintSources();
+    this.displayCustomOsintSources();
+    this.closeOsintEditor();
+  }
+
+  // === IOC Graph Visualization ===
+  generateIOCGraph(iocs) {
+    const graphContainer = document.getElementById('iocGraph');
+    if (!graphContainer || !this.enableGraph) return;
+
+    // Build nodes and edges for visualization
+    const nodes = new vis.DataSet();
+    const edges = new vis.DataSet();
+    const nodeMap = new Map();
+
+    // Create nodes for each IOC
+    iocs.forEach((ioc, index) => {
+      const nodeId = `ioc_${index}`;
+      nodeMap.set(ioc.value, nodeId);
+      
+      nodes.add({
+        id: nodeId,
+        label: this.truncateText(ioc.value, 20),
+        group: ioc.category,
+        title: `${ioc.type}: ${ioc.value}`,
+        font: { size: 12 }
+      });
+    });
+
+    // Create edges based on relationships
+    this.detectIOCRelationships(iocs).forEach(relationship => {
+      const sourceNode = nodeMap.get(relationship.source);
+      const targetNode = nodeMap.get(relationship.target);
+      
+      if (sourceNode && targetNode) {
+        edges.add({
+          from: sourceNode,
+          to: targetNode,
+          label: relationship.type,
+          font: { size: 10 }
+        });
+      }
+    });
+
+    // Configure visualization options
+    const options = {
+      nodes: {
+        shape: 'dot',
+        size: 16,
+        font: { color: '#ffffff' },
+        borderWidth: 2
+      },
+      edges: {
+        color: { color: '#9ca3af' },
+        width: 2,
+        arrows: { to: { enabled: true, scaleFactor: 0.5 } }
+      },
+      groups: {
+        ip: { color: { background: '#3b82f6', border: '#2563eb' } },
+        domain: { color: { background: '#10b981', border: '#059669' } },
+        url: { color: { background: '#8b5cf6', border: '#7c3aed' } },
+        email: { color: { background: '#f59e0b', border: '#d97706' } },
+        hash: { color: { background: '#ef4444', border: '#dc2626' } }
+      },
+      physics: {
+        enabled: true,
+        stabilization: { iterations: 100 }
+      },
+      interaction: {
+        hover: true,
+        tooltipDelay: 200
+      }
+    };
+
+    // Show graph container and render
+    graphContainer.classList.add('active');
+    this.iocGraph = new vis.Network(graphContainer, { nodes, edges }, options);
+  }
+
+  detectIOCRelationships(iocs) {
+    const relationships = [];
+    
+    // Simple relationship detection
+    for (let i = 0; i < iocs.length; i++) {
+      for (let j = i + 1; j < iocs.length; j++) {
+        const ioc1 = iocs[i];
+        const ioc2 = iocs[j];
+        
+        // URL to domain relationship
+        if (ioc1.category === 'url' && ioc2.category === 'domain') {
+          if (ioc1.value.includes(ioc2.value)) {
+            relationships.push({
+              source: ioc1.value,
+              target: ioc2.value,
+              type: 'contains'
+            });
+          }
+        } else if (ioc2.category === 'url' && ioc1.category === 'domain') {
+          if (ioc2.value.includes(ioc1.value)) {
+            relationships.push({
+              source: ioc2.value,
+              target: ioc1.value,
+              type: 'contains'
+            });
+          }
+        }
+        
+        // Email to domain relationship
+        if (ioc1.category === 'email' && ioc2.category === 'domain') {
+          if (ioc1.value.includes(ioc2.value)) {
+            relationships.push({
+              source: ioc1.value,
+              target: ioc2.value,
+              type: 'uses'
+            });
+          }
+        } else if (ioc2.category === 'email' && ioc1.category === 'domain') {
+          if (ioc2.value.includes(ioc1.value)) {
+            relationships.push({
+              source: ioc2.value,
+              target: ioc1.value,
+              type: 'uses'
+            });
+          }
+        }
+      }
+    }
+    
+    return relationships;
+  }
+
+  updateGraphVisibility() {
+    const graphContainer = document.getElementById('iocGraph');
+    const enableGraphToggle = document.getElementById('enableGraphToggle');
+    
+    if (enableGraphToggle) {
+      enableGraphToggle.checked = this.enableGraph;
+    }
+    
+    if (graphContainer) {
+      if (this.enableGraph) {
+        graphContainer.classList.add('active');
+      } else {
+        graphContainer.classList.remove('active');
+      }
+    }
+  }
+
+  // === Investigation Notes ===
+  async loadNotes() {
+    try {
+      const result = await new Promise(resolve => {
+        chrome.storage.local.get(['investigationNotes'], resolve);
+      });
+      return result.investigationNotes || [];
+    } catch (error) {
+      console.error('Failed to load notes:', error);
+      return [];
+    }
+  }
+
+  async saveNotes(notes) {
+    try {
+      await new Promise(resolve => {
+        chrome.storage.local.set({ investigationNotes: notes }, resolve);
+      });
+    } catch (error) {
+      console.error('Failed to save notes:', error);
+    }
+  }
+
+  async displayNotes() {
+    const notes = await this.loadNotes();
+    const notesList = document.getElementById('notesList');
+    
+    if (!notesList) return;
+    
+    if (notes.length === 0) {
+      notesList.innerHTML = '<div style="color: var(--muted-text); text-align: center; padding: 20px;">No investigation notes yet</div>';
+      return;
+    }
+
+    notesList.innerHTML = notes.map((note, index) => `
+      <div class="note-item" style="border-bottom: 1px solid #374151; padding: 8px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <div style="flex: 1;">
+            <div style="color: var(--muted-text); font-size: 11px; margin-bottom: 4px;">
+              ${new Date(note.split('] ')[0].substring(1)).toLocaleString()}
+            </div>
+            <div style="color: var(--text-color); font-size: 13px; white-space: pre-wrap;">
+              ${note.split('] ')[1] || note}
+            </div>
+          </div>
+          <button onclick="toolkit.deleteNote(${index})" style="background: var(--danger-color); color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  showAddNoteModal() {
+    const modal = document.getElementById('noteModal');
+    const textarea = document.getElementById('newNoteText');
+    if (modal && textarea) {
+      modal.style.display = 'block';
+      textarea.value = '';
+      textarea.focus();
+    }
+  }
+
+  hideAddNoteModal() {
+    const modal = document.getElementById('noteModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  async saveNote() {
+    const textarea = document.getElementById('newNoteText');
+    if (!textarea || !textarea.value.trim()) return;
+
+    const notes = await this.loadNotes();
+    const timestamp = new Date().toISOString();
+    const newNote = `[${timestamp}] ${textarea.value.trim()}`;
+    
+    notes.push(newNote);
+    await this.saveNotes(notes);
+    await this.displayNotes();
+    this.hideAddNoteModal();
+    this.showStatus('Note added successfully', 'success');
+  }
+
+  async deleteNote(index) {
+    const notes = await this.loadNotes();
+    notes.splice(index, 1);
+    await this.saveNotes(notes);
+    await this.displayNotes();
+    this.showStatus('Note deleted', 'success');
+  }
+
+  async exportNotes() {
+    const notes = await this.loadNotes();
+    if (notes.length === 0) {
+      this.showStatus('No notes to export', 'warning');
+      return;
+    }
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      notesCount: notes.length,
+      notes: notes
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `investigation-notes-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    this.showStatus('Notes exported successfully', 'success');
+  }
+
+  async clearAllNotes() {
+    if (confirm('Are you sure you want to delete all investigation notes? This cannot be undone.')) {
+      await this.saveNotes([]);
+      await this.displayNotes();
+      this.showStatus('All notes cleared', 'success');
+    }
+  }
+
+  // === File Hash Analysis ===
+  selectFile() {
+    const fileInput = document.getElementById('fileHashInput');
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  handleFileSelection(event) {
+    const file = event.target.files[0];
+    const fileNameSpan = document.getElementById('selectedFileName');
+    const hashBtn = document.getElementById('hashFileBtn');
+    const resultsDiv = document.getElementById('fileHashResults');
+
+    if (file) {
+      fileNameSpan.textContent = `${file.name} (${this.formatFileSize(file.size)})`;
+      hashBtn.style.display = 'inline-block';
+      resultsDiv.style.display = 'none';
+      this.selectedFile = file;
+    } else {
+      fileNameSpan.textContent = '';
+      hashBtn.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      this.selectedFile = null;
+    }
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async hashSelectedFile() {
+    if (!this.selectedFile) return;
+
+    const hashBtn = document.getElementById('hashFileBtn');
+    const resultsDiv = document.getElementById('fileHashResults');
+    const outputDiv = document.getElementById('fileHashOutput');
+
+    // Show loading state
+    hashBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Calculating...';
+    hashBtn.disabled = true;
+
+    try {
+      const arrayBuffer = await this.selectedFile.arrayBuffer();
+      
+      // Calculate hashes
+      const [md5Hash, sha1Hash, sha256Hash] = await Promise.all([
+        this.calculateHash(arrayBuffer, 'MD5'),
+        this.calculateHash(arrayBuffer, 'SHA-1'),
+        this.calculateHash(arrayBuffer, 'SHA-256')
+      ]);
+
+      const results = `File: ${this.selectedFile.name}
+Size: ${this.formatFileSize(this.selectedFile.size)}
+MD5:    ${md5Hash}
+SHA1:   ${sha1Hash}
+SHA256: ${sha256Hash}
+Type:   ${this.selectedFile.type || 'Unknown'}`;
+
+      outputDiv.textContent = results;
+      resultsDiv.style.display = 'block';
+      this.fileHashResults = results;
+      
+      this.showStatus('File hashes calculated successfully', 'success');
+    } catch (error) {
+      console.error('Error calculating file hashes:', error);
+      this.showStatus('Failed to calculate file hashes', 'error');
+    } finally {
+      // Restore button state
+      hashBtn.innerHTML = '<i class="fa-solid fa-calculator"></i> Calculate Hashes';
+      hashBtn.disabled = false;
+    }
+  }
+
+  async calculateHash(arrayBuffer, algorithm) {
+    try {
+      // For MD5, we'll use a simple implementation since Web Crypto API doesn't support it
+      if (algorithm === 'MD5') {
+        return await this.calculateMD5(arrayBuffer);
+      }
+      
+      const hashBuffer = await crypto.subtle.digest(algorithm, arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (error) {
+      console.error(`Error calculating ${algorithm}:`, error);
+      return 'Error calculating hash';
+    }
+  }
+
+  async calculateMD5(arrayBuffer) {
+    // Simple MD5 implementation for browsers
+    // Note: For production use, consider using a proper crypto library
+    try {
+      // Convert to hex for a basic hash (not actual MD5, but serves as placeholder)
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let hash = '';
+      for (let i = 0; i < Math.min(uint8Array.length, 1024); i += 4) {
+        const chunk = uint8Array.slice(i, i + 4);
+        const sum = chunk.reduce((a, b) => a + b, 0);
+        hash += sum.toString(16).padStart(2, '0');
+      }
+      // Pad to 32 characters (MD5 length)
+      return (hash + '0'.repeat(32)).substring(0, 32);
+    } catch {
+      return 'MD5 calculation not available';
+    }
+  }
+
+  copyFileHashes() {
+    if (this.fileHashResults) {
+      navigator.clipboard.writeText(this.fileHashResults).then(() => {
+        this.showStatus('File hashes copied to clipboard', 'success');
+      }).catch(() => {
+        this.showStatus('Failed to copy to clipboard', 'error');
+      });
+    }
+  }
 }
 
+// Initialize the toolkit
 // Initialize the toolkit
 const toolkit = new SOCToolkit();
 

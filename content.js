@@ -27,6 +27,10 @@
       highlightIOCsOnPage(request.iocs);
       sendResponse({ success: true });
     }
+    if (request.action === "copyToClipboard") {
+      copyToClipboard(request.text);
+      sendResponse({ success: true });
+    }
   });
 
 
@@ -113,12 +117,42 @@
     }
   }
 
-  // Initialize snippet system
+    // Initialize snippet system
   console.log("SOC Toolkit: Initializing snippet system");
   loadSnippetsAndPrefixes(() => {
     console.log("SOC Toolkit: Loaded", snippets.length, "snippets with prefixes:", prefixes);
   });
 
-  // Initialize
-  console.log("SOC Analyst Toolkit content script loaded");
+  // Clipboard functionality
+  function copyToClipboard(text) {
+    try {
+      // Create a temporary textarea element
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.top = '-1000px';
+      document.body.appendChild(textarea);
+      
+      // Select and copy
+      textarea.select();
+      textarea.setSelectionRange(0, 99999); // For mobile devices
+      document.execCommand('copy');
+      
+      // Clean up
+      document.body.removeChild(textarea);
+      
+      console.log('SOC Toolkit: Text copied to clipboard successfully');
+    } catch (error) {
+      console.error('SOC Toolkit: Failed to copy to clipboard:', error);
+      
+      // Fallback: try navigator.clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(err => {
+          console.error('SOC Toolkit: Clipboard API also failed:', err);
+        });
+      }
+    }
+  }
+
 })();
