@@ -381,19 +381,6 @@
   loadSnippets(() => {
     console.log("SOC Toolkit: Loaded", snippets.length, "snippets");
     setupSnippetSystem();
-    
-    // Show a brief notification that the system is ready
-    if (document.readyState === 'complete') {
-      setTimeout(() => {
-        showPageNotification("🛡️ SOC Toolkit ready! Press Ctrl+Alt+L to view snippets", 'info', 2000);
-      }, 1000);
-    } else {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          showPageNotification("🛡️ SOC Toolkit ready! Press Ctrl+Alt+L to view snippets", 'info', 2000);
-        }, 1000);
-      });
-    }
   });
 
 })();
