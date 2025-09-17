@@ -268,7 +268,7 @@
     
     body {
       width: 800px;
-      height: 900px;
+      height: 600px;
       font-family: 'Courier New', 'Monaco', 'Lucida Console', monospace;
       background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 25%, var(--bg-accent) 50%, var(--bg-secondary) 75%, var(--bg-primary) 100%);
       color: var(--text-primary);
@@ -449,25 +449,25 @@
 
     .tab-content {
       display: none;
-      padding: 24px;
-      height: calc(900px - 140px); /* Total height minus header and tab nav */
+      padding: 16px;
+      height: calc(600px - 120px); /* Total height minus header and tab nav */
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--text-primary) var(--bg-accent);
     }
 
     .tab-content::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
     }
 
     .tab-content::-webkit-scrollbar-track {
       background: var(--bg-accent);
-      border-radius: 4px;
+      border-radius: 3px;
     }
 
     .tab-content::-webkit-scrollbar-thumb {
       background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-      border-radius: 4px;
+      border-radius: 3px;
     }
 
     .tab-content::-webkit-scrollbar-thumb:hover {
@@ -566,8 +566,8 @@
 
     /* Float mode styles */
     body.float-mode {
-      min-width: 440px;
-      min-height: 620px;
+      min-width: 400px;
+      min-height: 500px;
       border-radius: 12px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
@@ -607,8 +607,8 @@
     
     .btn-group {
       display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-bottom: 8px;
     }
     
     .btn {
@@ -665,7 +665,7 @@
       background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
       border: 2px solid var(--border-primary);
       border-radius: 6px;
-      max-height: 350px;
+      max-height: 250px;
       overflow-y: auto;
       box-shadow: 0 0 15px var(--accent-glow);
     }
@@ -845,25 +845,26 @@
     .snippet-search {
       width: 100%;
       padding: 8px 12px;
-      background: #22c55e;
-      border: 1px solid #002200;
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      border: 2px solid var(--border-primary);
       border-radius: 6px;
-    }
-    .snippet-search {
-      width: 100%;
-      padding: 8px 12px;
-      background: #22c55e;
-      border: 1px solid #002200;
-      border-radius: 6px;
-      color: #4ade80;
+      color: var(--text-primary);
       font-size: 12px;
       margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 0 5px var(--accent-glow);
     }
     
     .snippet-search:focus {
       outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      border-color: var(--text-primary);
+      background: linear-gradient(135deg, var(--button-hover-dark), var(--bg-accent-dark));
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+
+    .snippet-search::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
     }
     
     .snippet-list {
@@ -872,11 +873,12 @@
     }
     
     .snippet-item {
-      background: #22c55e;
-      border: 1px solid #002200;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
       border-radius: 6px;
       margin-bottom: 8px;
       overflow: hidden;
+      box-shadow: 0 0 8px var(--accent-glow-light);
     }
     
     .snippet-header {
@@ -889,27 +891,28 @@
     }
     
     .snippet-header:hover {
-      background: #002200;
+      background: var(--button-hover-dark);
     }
     
     .snippet-name {
       font-weight: 500;
-      color: #4ade80;
+      color: var(--text-primary);
     }
     
     .snippet-trigger {
       font-family: 'Courier New', monospace;
       font-size: 11px;
-      background: #6b7280;
+      background: var(--bg-accent-dark);
       padding: 2px 6px;
       border-radius: 3px;
-      color: #d1d5db;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-secondary);
     }
     
     .snippet-content {
       padding: 0 12px 12px;
       display: none;
-      border-top: 1px solid #002200;
+      border-top: 1px solid var(--border-secondary);
       padding-top: 8px;
     }
     
@@ -918,7 +921,7 @@
     }
     
     .snippet-text {
-      background: #1f2937;
+      background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent-dark));
       padding: 8px;
       border-radius: 4px;
       font-family: 'Courier New', monospace;
@@ -928,6 +931,8 @@
       max-height: 100px;
       overflow-y: auto;
       margin-bottom: 8px;
+      color: var(--text-primary);
+      border: 1px solid var(--border-secondary);
     }
     
     .snippet-actions {
@@ -943,7 +948,8 @@
     .empty-state {
       text-align: center;
       padding: 40px 20px;
-      color: #6b7280;
+      color: var(--text-secondary);
+      opacity: 0.7;
     }
     
     .empty-state i {
@@ -1052,8 +1058,8 @@
 
     /* Float mode styles */
     body.float-mode {
-      min-width: 440px;
-      min-height: 620px;
+      min-width: 400px;
+      min-height: 500px;
       border-radius: 12px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
@@ -1172,6 +1178,270 @@ body.float-mode .header {
 
     #iocGraph.active {
       display: block;
+    }
+
+    /* File Hash Analysis Styles */
+    .file-hash-section {
+      margin: 12px 0 8px 0;
+      padding: 12px;
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .file-hash-section h4 {
+      color: var(--text-primary);
+      font-size: 13px;
+      margin: 0 0 8px 0;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .file-hash-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .file-hash-controls .btn {
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+
+    .file-hash-filename {
+      color: var(--text-secondary);
+      font-size: 11px;
+      flex: 1;
+      font-family: 'Courier New', monospace;
+    }
+
+    .file-hash-results {
+      display: none;
+      margin-top: 8px;
+      padding: 8px;
+      background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent-dark));
+      border-radius: 4px;
+      border: 1px solid var(--border-primary);
+    }
+
+    .file-hash-results .hash-label {
+      color: var(--text-secondary);
+      font-size: 11px;
+      margin-bottom: 6px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .file-hash-output {
+      color: var(--text-primary);
+      font-size: 10px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      text-shadow: 0 0 3px var(--text-shadow);
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .file-hash-results .btn {
+      padding: 4px 8px;
+      font-size: 10px;
+      margin-top: 6px;
+    }
+
+    /* Notes Tab Styles */
+    .notes-header {
+      margin-bottom: 16px;
+    }
+
+    .notes-header h3 {
+      color: var(--text-primary);
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .notes-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .notes-controls .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .notes-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .notes-list {
+      padding: 8px;
+    }
+
+    .note-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+    }
+
+    .note-modal-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      border-radius: 8px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .note-modal-content h4 {
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .note-textarea {
+      width: 100%;
+      height: 80px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+      margin-bottom: 12px;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .note-textarea:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+
+    .note-textarea::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+
+    .note-modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .note-modal-actions .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Snippet Editor Styles */
+    .snippet-editor {
+      display: none;
+      position: relative;
+      margin-top: 12px;
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .snippet-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .snippet-editor-title {
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .snippet-editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .snippet-editor-inputs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .snippet-name-input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .snippet-trigger-input {
+      width: 140px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .snippet-content-input {
+      width: 100%;
+      min-height: 120px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .snippet-name-input:focus,
+    .snippet-trigger-input:focus,
+    .snippet-content-input:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+
+    .snippet-name-input::placeholder,
+    .snippet-trigger-input::placeholder,
+    .snippet-content-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
     }
   </style>
   </style>
@@ -1309,29 +1579,29 @@ body.float-mode .header {
       <button class="btn btn-secondary btn-small" id="openVTSelectedBtn"><i class="fa-solid fa-shield-virus"></i> Open in VT</button>
     </div>
   </div>
+</div>
 
-  <!-- File Hash Analysis Section -->
-  <div style="margin: 20px 0 16px 0; padding: 16px; border: 2px solid #22c55e; border-radius: 8px; background: linear-gradient(135deg, #000000, #001100); box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);">
-    <h4 style="color: #4ade80; font-size: 14px; margin: 0 0 12px 0; font-family: 'Courier New', monospace; text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);">
-      <i class="fa-solid fa-file-shield"></i> File Hash Analysis
-    </h4>
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
-      <input type="file" id="fileHashInput" style="display: none;">
-      <button id="selectFileBtn" class="btn" style="padding: 8px 14px; font-size: 12px;">
-        <i class="fa-solid fa-file-arrow-up"></i> Select File
-      </button>
-      <span id="selectedFileName" style="color: #22c55e; font-size: 12px; flex: 1; font-family: 'Courier New', monospace;"></span>
-      <button id="hashFileBtn" class="btn" style="padding: 8px 14px; font-size: 12px; display: none;">
-        <i class="fa-solid fa-calculator"></i> Calculate Hashes
-      </button>
-    </div>
-    <div id="fileHashResults" style="display: none; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, #001100, #002200); border-radius: 6px; border: 1px solid #22c55e;">
-      <div style="color: #22c55e; font-size: 12px; margin-bottom: 8px; font-family: 'Courier New', monospace;">File Hashes:</div>
-      <div id="fileHashOutput" style="color: #4ade80; font-size: 12px; font-family: 'Courier New', monospace; white-space: pre-wrap; text-shadow: 0 0 3px rgba(34, 197, 94, 0.3);"></div>
-      <button id="copyFileHashBtn" class="btn" style="padding: 6px 12px; font-size: 11px; margin-top: 8px;">
-        <i class="fa-solid fa-copy"></i> Copy Hashes
-      </button>
-    </div>
+<!-- File Hash Analysis Section -->
+<div class="file-hash-section">
+  <h4>
+    <i class="fa-solid fa-file-shield"></i> File Hash Analysis
+  </h4>
+  <div class="file-hash-controls">
+    <input type="file" id="fileHashInput" style="display: none;">
+    <button id="selectFileBtn" class="btn">
+      <i class="fa-solid fa-file-arrow-up"></i> Select File
+    </button>
+    <span id="selectedFileName" class="file-hash-filename"></span>
+    <button id="hashFileBtn" class="btn" style="display: none;">
+      <i class="fa-solid fa-calculator"></i> Calculate Hashes
+    </button>
+  </div>
+  <div id="fileHashResults" class="file-hash-results">
+    <div class="hash-label">File Hashes:</div>
+    <div id="fileHashOutput" class="file-hash-output"></div>
+    <button id="copyFileHashBtn" class="btn">
+      <i class="fa-solid fa-copy"></i> Copy Hashes
+    </button>
   </div>
 </div>
 
@@ -1383,55 +1653,55 @@ body.float-mode .header {
     </div>
 
     <!-- Inline snippet editor (hidden by default) -->
-    <div id="snippetEditor" style="display:none; position:relative; margin-top:12px; background:#0b1220; border:1px solid #22c55e; padding:12px; border-radius:8px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <strong style="color:#4ade80;">Snippet Editor</strong>
-        <div>
+    <div id="snippetEditor" class="snippet-editor">
+      <div class="snippet-editor-header">
+        <strong class="snippet-editor-title">Snippet Editor</strong>
+        <div class="snippet-editor-actions">
           <button class="btn btn-secondary btn-small" id="snippetCancelBtn">Cancel</button>
           <button class="btn btn-primary btn-small" id="snippetSaveBtn">Save</button>
         </div>
       </div>
-      <div style="display:flex; gap:8px; margin-bottom:8px;">
-        <input id="snippetNameInput" placeholder="Name" style="flex:1; padding:8px; border-radius:6px; border:1px solid #22c55e; background:#000000; color:#4ade80;">
-        <input id="snippetTriggerInput" placeholder="Trigger (e.g. $ex)" style="width:140px; padding:8px; border-radius:6px; border:1px solid #22c55e; background:#000000; color:#4ade80;">
+      <div class="snippet-editor-inputs">
+        <input id="snippetNameInput" class="snippet-name-input" placeholder="Name">
+        <input id="snippetTriggerInput" class="snippet-trigger-input" placeholder="Trigger (e.g. $ex)">
       </div>
-      <textarea id="snippetContentInput" placeholder="Content" style="width:100%; min-height:120px; padding:8px; border-radius:6px; border:1px solid #22c55e; background:#000000; color:#4ade80; font-family:monospace;"></textarea>
+      <textarea id="snippetContentInput" class="snippet-content-input" placeholder="Content"></textarea>
     </div>
   </div>
   
   <!-- Investigation Notes Tab -->
   <div class="tab-content" id="notes-tab">
-    <div style="margin-bottom: 16px;">
-      <h3 style="color: #4ade80; font-size: 14px; margin-bottom: 8px;">
+    <div class="notes-header">
+      <h3>
         <i class="fa-solid fa-file-lines"></i> Investigation Notes
       </h3>
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <button id="addNoteBtn" class="btn" style="padding: 6px 12px; font-size: 12px;">
+      <div class="notes-controls">
+        <button id="addNoteBtn" class="btn">
           <i class="fa-solid fa-plus"></i> Add Note
         </button>
-        <button id="exportNotesBtn" class="btn" style="padding: 6px 12px; font-size: 12px;">
+        <button id="exportNotesBtn" class="btn">
           <i class="fa-solid fa-download"></i> Export
         </button>
-        <button id="clearNotesBtn" class="btn" style="padding: 6px 12px; font-size: 12px;">
+        <button id="clearNotesBtn" class="btn">
           <i class="fa-solid fa-trash"></i> Clear All
         </button>
       </div>
     </div>
     
-    <div id="notesContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #22c55e; border-radius: 6px; background: #000000;">
-      <div id="notesList" style="padding: 8px;">
+    <div id="notesContainer" class="notes-container">
+      <div id="notesList" class="notes-list">
         <!-- Notes will be populated here -->
       </div>
     </div>
     
     <!-- Add Note Modal -->
-    <div id="noteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000;">
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1f2937; border-radius: 8px; padding: 20px; width: 90%; max-width: 400px;">
-        <h4 style="color: #4ade80; margin-bottom: 12px;">Add Investigation Note</h4>
-        <textarea id="newNoteText" placeholder="Enter your note..." style="width: 100%; height: 80px; padding: 8px; border-radius: 6px; border: 1px solid #22c55e; background: #000000; color: #4ade80; resize: vertical; margin-bottom: 12px;"></textarea>
-        <div style="display: flex; gap: 8px; justify-content: flex-end;">
-          <button id="cancelNoteBtn" class="btn" style="padding: 6px 12px; font-size: 12px;">Cancel</button>
-          <button id="saveNoteBtn" class="btn" style="padding: 6px 12px; font-size: 12px;">Save Note</button>
+    <div id="noteModal" class="note-modal">
+      <div class="note-modal-content">
+        <h4>Add Investigation Note</h4>
+        <textarea id="newNoteText" class="note-textarea" placeholder="Enter your note..."></textarea>
+        <div class="note-modal-actions">
+          <button id="cancelNoteBtn" class="btn">Cancel</button>
+          <button id="saveNoteBtn" class="btn">Save Note</button>
         </div>
       </div>
     </div>
