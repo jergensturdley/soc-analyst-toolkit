@@ -353,6 +353,12 @@ class SOCToolkit {
       return;
     }
 
+    // Handle graph image exports
+    if (format === 'graph-png' || format === 'graph-svg') {
+      this.exportGraphImage(format);
+      return;
+    }
+
     let content = '';
     let mime = 'text/plain';
     let ext = 'txt';
@@ -369,17 +375,151 @@ class SOCToolkit {
       content = iocs.map(i => `- **${i.type}**: ${i.value}`).join('\n');
       mime = 'text/markdown';
       ext = 'md';
+    } else if (format === 'obsidian') {
+      content = this.generateObsidianGraph(iocs);
+      mime = 'text/markdown';
+      ext = 'md';
     }
 
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+    const filename = format === 'obsidian' ? `ioc-graph-${new Date().toISOString().split('T')[0]}.${ext}` : `ioc-results-${new Date().toISOString().split('T')[0]}.${ext}`;
     a.href = url;
-    a.download = `ioc-results-${new Date().toISOString().split('T')[0]}.${ext}`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
 
     this.showNotification(`Exported ${iocs.length} IOCs as ${format.toUpperCase()}`, 'success');
+  }
+
+  // Generate Obsidian-compatible graph markdown
+  generateObsidianGraph(iocs) {
+    const timestamp = new Date().toISOString().split('T')[0];
+    let content = `# IOC Analysis Graph - ${timestamp}\n\n`;
+    
+    // Add metadata
+    content += `---\n`;
+    content += `tags: [ioc, analysis, graph]\n`;
+    content += `date: ${timestamp}\n`;
+    content += `---\n\n`;
+    
+    // Add IOC nodes as markdown links
+    content += `## IOC Nodes\n\n`;
+    const nodeMap = new Map();
+    
+    iocs.forEach((ioc, index) => {
+      const nodeName = `IOC_${ioc.type}_${index + 1}`;
+      nodeMap.set(ioc.value, nodeName);
+      content += `### [[${nodeName}]]\n`;
+      content += `- **Type**: ${ioc.type}\n`;
+      content += `- **Value**: \`${ioc.value}\`\n`;
+      content += `- **Category**: ${ioc.category || 'unknown'}\n\n`;
+    });
+    
+    // Add relationships
+    content += `## Relationships\n\n`;
+    const relationships = this.detectIOCRelationships(iocs);
+    
+    if (relationships.length > 0) {
+      relationships.forEach(rel => {
+        const sourceNode = nodeMap.get(rel.source);
+        const targetNode = nodeMap.get(rel.target);
+        if (sourceNode && targetNode) {
+          content += `- [[${sourceNode}]] --${rel.type}--> [[${targetNode}]]\n`;
+        }
+      });
+    } else {
+      content += `No relationships detected between IOCs.\n`;
+    }
+    
+    // Add canvas view for Obsidian
+    content += `\n## Graph View\n\n`;
+    content += `This analysis contains ${iocs.length} IOCs with ${relationships.length} relationships.\n`;
+    content += `Use Obsidian's Graph View to visualize the connections between these indicators.\n\n`;
+    
+    // Add individual IOC files as suggestions
+    content += `## Individual IOC Files\n\n`;
+    content += `Consider creating individual files for each IOC:\n\n`;
+    iocs.forEach((ioc, index) => {
+      const nodeName = `IOC_${ioc.type}_${index + 1}`;
+      content += `- Create file: \`${nodeName}.md\` with content:\n`;
+      content += `  \`\`\`markdown\n`;
+      content += `  # ${ioc.value}\n`;
+      content += `  \n`;
+      content += `  **Type**: ${ioc.type}\n`;
+      content += `  **Value**: \`${ioc.value}\`\n`;
+      content += `  **Analysis Date**: ${timestamp}\n`;
+      content += `  \n`;
+      content += `  ## Analysis Notes\n`;
+      content += `  \n`;
+      content += `  ## Related IOCs\n`;
+      content += `  \`\`\`\n\n`;
+    });
+    
+    return content;
+  }
+
+  // Export graph visualization as image
+  exportGraphImage(format) {
+    if (!this.iocGraph) {
+      this.showNotification('No graph visualization available. Enable graph visualization first.', 'error');
+      return;
+    }
+
+    try {
+      const canvas = this.iocGraph.canvas.frame.canvas;
+      const graphContainer = document.getElementById('iocGraph');
+      
+      if (!canvas) {
+        this.showNotification('Canvas not available for export', 'error');
+        return;
+      }
+
+      if (format === 'graph-png') {
+        // Export as PNG
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ioc-graph-${new Date().toISOString().split('T')[0]}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+            this.showNotification('Graph exported as PNG', 'success');
+          } else {
+            this.showNotification('Failed to export graph as PNG', 'error');
+          }
+        }, 'image/png');
+      } else if (format === 'graph-svg') {
+        // Export as SVG (vis.js doesn't directly support SVG, so we'll create a canvas-to-SVG conversion)
+        const svgData = this.canvasToSVG(canvas);
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ioc-graph-${new Date().toISOString().split('T')[0]}.svg`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showNotification('Graph exported as SVG', 'success');
+      }
+    } catch (error) {
+      console.error('Graph export error:', error);
+      this.showNotification('Failed to export graph image', 'error');
+    }
+  }
+
+  // Convert canvas to SVG (basic implementation)
+  canvasToSVG(canvas) {
+    const { width, height } = canvas;
+    const imageData = canvas.toDataURL('image/png');
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>IOC Relationship Graph</title>
+  <desc>Generated from SOC Analyst Toolkit</desc>
+  <image x="0" y="0" width="${width}" height="${height}" xlink:href="${imageData}"/>
+</svg>`;
   }
 
   filterIOCs(category) {
@@ -520,13 +660,11 @@ class SOCToolkit {
       <div class="snippet-item" data-index="${idx}">
         <div class="snippet-header">
           <div class="snippet-name">${this.escapeHtml(snip.name || 'Untitled')}</div>
-          <div class="snippet-trigger">${this.escapeHtml(snip.trigger || '')}</div>
         </div>
         <div class="snippet-content">
           <div class="snippet-text">${this.escapeHtml(snip.content || '')}</div>
           <div class="snippet-actions">
-            <button class="btn btn-primary btn-small action-use"><i class="fa-solid fa-play"></i> Use</button>
-            <button class="btn btn-secondary btn-small action-copy"><i class="fa-regular fa-copy"></i> Copy</button>
+            <button class="btn btn-primary btn-small action-copy"><i class="fa-regular fa-copy"></i> Copy</button>
             <button class="btn btn-secondary btn-small action-edit"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
             <button class="btn btn-secondary btn-small action-delete"><i class="fa-regular fa-trash-can"></i> Delete</button>
           </div>
@@ -590,7 +728,6 @@ class SOCToolkit {
     if (!q) return this.displaySnippets();
     const filtered = this.snippets.filter(s =>
       (s.name || '').toLowerCase().includes(q) ||
-      (s.trigger || '').toLowerCase().includes(q) ||
       (s.content || '').toLowerCase().includes(q)
     );
     this.displaySnippets(filtered);
@@ -604,19 +741,16 @@ class SOCToolkit {
   openSnippetEditor(index = null) {
     const editor = document.getElementById('snippetEditor');
     const nameIn = document.getElementById('snippetNameInput');
-    const triggerIn = document.getElementById('snippetTriggerInput');
     const contentIn = document.getElementById('snippetContentInput');
-    if (!editor || !nameIn || !triggerIn || !contentIn) return;
+    if (!editor || !nameIn || !contentIn) return;
     // If index provided, load existing
     if (index !== null && this.snippets[index]) {
       const s = this.snippets[index];
       nameIn.value = s.name || '';
-      triggerIn.value = s.trigger || '';
       contentIn.value = s.content || '';
       editor.dataset.editIndex = String(index);
     } else {
       nameIn.value = '';
-      triggerIn.value = '';
       contentIn.value = '';
       delete editor.dataset.editIndex;
     }
@@ -633,18 +767,16 @@ class SOCToolkit {
   async saveSnippetFromEditor() {
     const editor = document.getElementById('snippetEditor');
     const nameIn = document.getElementById('snippetNameInput');
-    const triggerIn = document.getElementById('snippetTriggerInput');
     const contentIn = document.getElementById('snippetContentInput');
-    if (!nameIn || !triggerIn || !contentIn) return;
+    if (!nameIn || !contentIn) return;
     const name = (nameIn.value || '').trim();
-    const trigger = (triggerIn.value || '').trim();
     const content = contentIn.value || '';
     if (!name) { this.showNotification('Please provide a name', 'error'); return; }
     const idx = editor.dataset.editIndex !== undefined ? Number(editor.dataset.editIndex) : -1;
     if (idx >= 0 && this.snippets[idx]) {
-      this.snippets[idx] = { name, trigger, content };
+      this.snippets[idx] = { name, content };
     } else {
-      this.snippets.push({ name, trigger, content });
+      this.snippets.push({ name, content });
     }
     await this.saveSnippets();
     this.displaySnippets();
@@ -665,7 +797,7 @@ class SOCToolkit {
         const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.snippets) ? parsed.snippets : []);
         if (!arr.length) throw new Error('No snippets found');
         // Basic normalization
-        const cleaned = arr.map(s => ({ name: s.name || 'Untitled', trigger: s.trigger || '', content: s.content || '' }));
+        const cleaned = arr.map(s => ({ name: s.name || 'Untitled', content: s.content || '' }));
         this.snippets = cleaned;
         await this.saveSnippets();
         this.displaySnippets();
