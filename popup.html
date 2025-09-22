@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOC Analyst Toolkit</title>
+  <link rel="stylesheet" href="css/all.min.css">
+  <script src="vis-network.min.js"></script>
+  <style>
+    :root {
+      /* Default Matrix Theme */
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-accent: #001100;
+      --bg-accent-dark: #003300;
+      --text-primary: #4ade80;
+      --text-secondary: #22c55e;
+      --border-primary: #22c55e;
+      --border-secondary: #003300;
+      --accent-glow: rgba(34, 197, 94, 0.2);
+      --accent-glow-light: rgba(34, 197, 94, 0.08);
+      --accent-glow-lighter: rgba(34, 197, 94, 0.05);
+      --accent-glow-subtle: rgba(34, 197, 94, 0.02);
+      --text-shadow: rgba(74, 222, 128, 0.3);
+      --button-hover: #001100;
+      --button-hover-dark: #002200;
+      --button-active: #15803d;
+      --danger-color: #dc2626;
+      --text-white: #ffffff;
+      --osint-link-color: #00ccff;
+      --type-ip-bg: #003366;
+      --type-ip-bg-dark: #0066cc;
+      --type-ip-text: #66ccff;
+      --type-ip-border: #0066cc;
+      --type-domain-bg: var(--bg-accent-dark);
+      --type-domain-bg-dark: var(--button-active);
+      --type-domain-text: var(--text-primary);
+      --type-domain-border: var(--border-primary);
+      --type-url-bg: #330066;
+      --type-url-bg-dark: #6600cc;
+      --type-url-text: #cc66ff;
+      --type-url-border: #9933cc;
+      --type-email-bg: #664400;
+      --type-email-bg-dark: #cc8800;
+      --type-email-text: #ffcc66;
+      --type-email-border: #cc8800;
+      --type-hash-bg: #660000;
+      --type-hash-bg-dark: #cc0000;
+      --type-hash-text: #ff6666;
+      --type-hash-border: #cc0000;
+    }
+
+    /* Blue Theme */
+    [data-theme="blue"] {
+      --bg-primary: #000011;
+      --bg-secondary: #0a0a1a;
+      --bg-accent: #001122;
+      --bg-accent-dark: #003355;
+      --text-primary: #4d9aff;
+      --text-secondary: #2563eb;
+      --border-primary: #2563eb;
+      --border-secondary: #003355;
+      --accent-glow: rgba(37, 99, 235, 0.2);
+      --accent-glow-light: rgba(37, 99, 235, 0.08);
+      --accent-glow-lighter: rgba(37, 99, 235, 0.05);
+      --accent-glow-subtle: rgba(37, 99, 235, 0.02);
+      --text-shadow: rgba(77, 154, 255, 0.3);
+      --button-hover: #001122;
+      --button-hover-dark: #002244;
+      --button-active: #1e40af;
+      --danger-color: #dc2626;
+      --text-white: #ffffff;
+      --type-ip-bg: var(--bg-accent-dark);
+      --type-ip-bg-dark: var(--button-active);
+      --type-ip-text: var(--text-primary);
+      --type-ip-border: var(--border-primary);
+      --type-domain-bg: #003366;
+      --type-domain-bg-dark: #0066cc;
+      --type-domain-text: #66ccff;
+      --type-domain-border: #0066cc;
+      --type-url-bg: #220044;
+      --type-url-bg-dark: #4400aa;
+      --type-url-text: #aa66ff;
+      --type-url-border: #6633aa;
+      --type-email-bg: #443300;
+      --type-email-bg-dark: #aa6600;
+      --type-email-border: #aa6600;
+      --type-email-text: #ffaa33;
+      --type-hash-bg: #440022;
+      --type-hash-bg-dark: #aa0044;
+      --type-hash-text: #ff6699;
+      --type-hash-border: #aa0044;
+    }
+
+    /* Red Theme */
+    [data-theme="red"] {
+      --bg-primary: #110000;
+      --bg-secondary: #1a0a0a;
+      --bg-accent: #220011;
+      --bg-accent-dark: #550033;
+      --text-primary: #ff4d6d;
+      --text-secondary: #dc2626;
+      --border-primary: #dc2626;
+      --border-secondary: #550033;
+      --accent-glow: rgba(220, 38, 38, 0.2);
+      --accent-glow-light: rgba(220, 38, 38, 0.08);
+      --accent-glow-lighter: rgba(220, 38, 38, 0.05);
+      --accent-glow-subtle: rgba(220, 38, 38, 0.02);
+      --text-shadow: rgba(255, 77, 109, 0.3);
+      --button-hover: #220011;
+      --button-hover-dark: #440022;
+      --button-active: #b91c1c;
+      --danger-color: #b91c1c;
+      --text-white: #ffffff;
+      --type-ip-bg: #330022;
+      --type-ip-bg-dark: #660044;
+      --type-ip-text: #ff6699;
+      --type-ip-border: #660044;
+      --type-domain-bg: #223300;
+      --type-domain-bg-dark: #446600;
+      --type-domain-text: #99ff66;
+      --type-domain-border: #446600;
+      --type-url-bg: var(--bg-accent-dark);
+      --type-url-bg-dark: var(--button-active);
+      --type-url-text: var(--text-primary);
+      --type-url-border: var(--border-primary);
+      --type-email-bg: #442200;
+      --type-email-bg-dark: #884400;
+      --type-email-text: #ffaa66;
+      --type-email-border: #884400;
+      --type-hash-bg: #440000;
+      --type-hash-bg-dark: #880000;
+      --type-hash-text: #ff6666;
+      --type-hash-border: #880000;
+    }
+
+    /* Purple Theme */
+    [data-theme="purple"] {
+      --bg-primary: #110011;
+      --bg-secondary: #1a0a1a;
+      --bg-accent: #220022;
+      --bg-accent-dark: #550055;
+      --text-primary: #a855f7;
+      --text-secondary: #7c3aed;
+      --border-primary: #7c3aed;
+      --border-secondary: #550055;
+      --accent-glow: rgba(124, 58, 237, 0.2);
+      --accent-glow-light: rgba(124, 58, 237, 0.08);
+      --accent-glow-lighter: rgba(124, 58, 237, 0.05);
+      --accent-glow-subtle: rgba(124, 58, 237, 0.02);
+      --text-shadow: rgba(168, 85, 247, 0.3);
+      --button-hover: #220022;
+      --button-hover-dark: #440044;
+      --button-active: #6d28d9;
+      --danger-color: #dc2626;
+      --text-white: #ffffff;
+      --type-ip-bg: #002244;
+      --type-ip-bg-dark: #004488;
+      --type-ip-text: #66aaff;
+      --type-ip-border: #004488;
+      --type-domain-bg: #224400;
+      --type-domain-bg-dark: #448800;
+      --type-domain-text: #88ff66;
+      --type-domain-border: #448800;
+      --type-url-bg: var(--bg-accent-dark);
+      --type-url-bg-dark: var(--button-active);
+      --type-url-text: var(--text-primary);
+      --type-url-border: var(--border-primary);
+      --type-email-bg: #442200;
+      --type-email-bg-dark: #884400;
+      --type-email-text: #ffaa66;
+      --type-email-border: #884400;
+      --type-hash-bg: #442200;
+      --type-hash-bg-dark: #884400;
+      --type-hash-text: #ff8844;
+      --type-hash-border: #884400;
+    }
+
+    /* Orange Theme */
+    [data-theme="orange"] {
+      --bg-primary: #111100;
+      --bg-secondary: #1a1a0a;
+      --bg-accent: #222200;
+      --bg-accent-dark: #555500;
+      --text-primary: #fb923c;
+      --text-secondary: #ea580c;
+      --border-primary: #ea580c;
+      --border-secondary: #555500;
+      --accent-glow: rgba(234, 88, 12, 0.2);
+      --accent-glow-light: rgba(234, 88, 12, 0.08);
+      --accent-glow-lighter: rgba(234, 88, 12, 0.05);
+      --accent-glow-subtle: rgba(234, 88, 12, 0.02);
+      --text-shadow: rgba(251, 146, 60, 0.3);
+      --button-hover: #222200;
+      --button-hover-dark: #444400;
+      --button-active: #c2410c;
+      --danger-color: #dc2626;
+      --text-white: #ffffff;
+      --type-ip-bg: #002244;
+      --type-ip-bg-dark: #004488;
+      --type-ip-text: #66aaff;
+      --type-ip-border: #004488;
+      --type-domain-bg: #224400;
+      --type-domain-bg-dark: #448800;
+      --type-domain-text: #88ff66;
+      --type-domain-border: #448800;
+      --type-url-bg: #440022;
+      --type-url-bg-dark: #880044;
+      --type-url-text: #ff6699;
+      --type-url-border: #880044;
+      --type-email-bg: var(--bg-accent-dark);
+      --type-email-bg-dark: var(--button-active);
+      --type-email-text: var(--text-primary);
+      --type-email-border: var(--border-primary);
+      --type-hash-bg: #442200;
+      --type-hash-bg-dark: #884400;
+      --type-hash-text: #ffaa66;
+      --type-hash-border: #884400;
+    }
+
+    /* Cyan Theme */
+    [data-theme="cyan"] {
+      --bg-primary: #001111;
+      --bg-secondary: #0a1a1a;
+      --bg-accent: #002222;
+      --bg-accent-dark: #005555;
+      --text-primary: #22d3ee;
+      --text-secondary: #0891b2;
+      --border-primary: #0891b2;
+      --border-secondary: #005555;
+      --accent-glow: rgba(8, 145, 178, 0.2);
+      --accent-glow-light: rgba(8, 145, 178, 0.08);
+      --accent-glow-lighter: rgba(8, 145, 178, 0.05);
+      --accent-glow-subtle: rgba(8, 145, 178, 0.02);
+      --text-shadow: rgba(34, 211, 238, 0.3);
+      --button-hover: #002222;
+      --button-hover-dark: #004444;
+      --button-active: #0e7490;
+      --danger-color: #dc2626;
+      --text-white: #ffffff;
+      --type-ip-bg: var(--bg-accent-dark);
+      --type-ip-bg-dark: var(--button-active);
+      --type-ip-text: var(--text-primary);
+      --type-ip-border: var(--border-primary);
+      --type-domain-bg: #224400;
+      --type-domain-bg-dark: #448800;
+      --type-domain-text: #88ff66;
+      --type-domain-border: #448800;
+      --type-url-bg: #440022;
+      --type-url-bg-dark: #880044;
+      --type-url-text: #ff6699;
+      --type-url-border: #880044;
+      --type-email-bg: #442200;
+      --type-email-bg-dark: #884400;
+      --type-email-text: #ffaa66;
+      --type-email-border: #884400;
+      --type-hash-bg: #224444;
+      --type-hash-bg-dark: #448888;
+      --type-hash-text: #66ffaa;
+      --type-hash-border: #448888;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 800px;
+      height: 600px;
+      font-family: 'Courier New', 'Monaco', 'Lucida Console', monospace;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 25%, var(--bg-accent) 50%, var(--bg-secondary) 75%, var(--bg-primary) 100%);
+      color: var(--text-primary);
+      font-size: 13px;
+      overflow: hidden;
+      border: 2px solid var(--border-primary);
+      position: relative;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 25% 25%, var(--accent-glow-light) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, var(--accent-glow-lighter) 0%, transparent 50%),
+        linear-gradient(90deg, transparent 0%, var(--accent-glow-subtle) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: -1;
+      animation: matrixBg 20s ease-in-out infinite alternate;
+    }
+    
+    @keyframes matrixBg {
+      0% { opacity: 0.2; }
+      100% { opacity: 0.05; }
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-accent) 25%, var(--bg-accent-dark) 50%, var(--bg-accent) 75%, var(--bg-primary) 100%);
+      border-bottom: 2px solid var(--text-primary);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--accent-glow-light), transparent);
+      animation: scan 8s infinite;
+    }
+    
+    @keyframes scan {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+
+    .header-content h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .header-content .version {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .control-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s, transform 0.08s;
+    }
+
+    .control-btn:hover {
+      background: var(--accent-glow-light);
+      color: var(--text-primary);
+    }
+
+    .control-btn:active {
+      transform: scale(0.98);
+    }
+
+    .control-btn i {
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .tab-nav {
+      display: flex;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent), var(--bg-primary));
+      border-bottom: 2px solid var(--text-primary);
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      border: 1px solid var(--border-secondary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Courier New', monospace;
+      position: relative;
+      overflow: hidden;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+    
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+      transition: left 0.5s;
+    }
+    
+    .tab-btn:hover::before {
+      left: 100%;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--bg-accent-dark), var(--button-active));
+      color: var(--text-primary);
+      border: 2px solid var(--text-primary);
+      text-shadow: 0 0 10px var(--text-shadow);
+      box-shadow: 0 0 15px var(--text-shadow);
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: linear-gradient(135deg, var(--button-hover), var(--button-hover-dark));
+      color: var(--text-primary);
+      border-color: var(--text-secondary);
+      text-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 16px;
+      height: calc(600px - 120px); /* Total height minus header and tab nav */
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-primary) var(--bg-accent);
+    }
+
+    .tab-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .tab-content::-webkit-scrollbar-track {
+      background: var(--bg-accent);
+      border-radius: 3px;
+    }
+
+    .tab-content::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+      border-radius: 3px;
+    }
+
+    .tab-content::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, var(--text-secondary), var(--button-active));
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* IOC Analysis Styles */
+
+    /* Header and float-mode controls */
+    .header {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-accent) 25%, var(--bg-accent) 50%, var(--bg-accent) 75%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border-secondary);
+      color: var(--text-secondary);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 8px 8px 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .header::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--text-primary), transparent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .version {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .control-btn:active {
+      transform: translateY(0);
+    }
+
+    .control-btn i {
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    /* Float mode styles */
+    body.float-mode {
+      min-width: 400px;
+      min-height: 500px;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    body.float-mode .header {
+      cursor: move;
+      user-select: none;
+    }
+
+    .ioc-input {
+      width: 100%;
+      min-height: 70px;
+      padding: 10px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      resize: vertical;
+      margin-bottom: 12px;
+      box-shadow: 0 0 5px var(--accent-glow);
+    }
+    
+    .ioc-input:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+    
+    .ioc-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    
+    .btn {
+      padding: 8px 12px;
+      border: 1px solid var(--border-primary);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--button-active);
+      color: var(--text-white);
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 0 3px var(--text-shadow);
+    }
+    
+    .btn:hover {
+      background: var(--text-secondary);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+    
+    .btn-primary {
+      background: var(--button-active);
+      color: var(--text-white);
+      border-color: var(--border-primary);
+    }
+    
+    .btn-primary:hover {
+      background: var(--text-secondary);
+    }
+
+    .btn-secondary {
+      background: var(--button-active);
+      color: var(--text-white);
+      border-color: var(--border-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--text-secondary);
+    }
+
+    .btn-success {
+      background: var(--button-active);
+      color: var(--text-white);
+      border-color: var(--border-primary);
+    }
+
+    .btn-success:hover {
+      background: var(--text-secondary);
+    }    .ioc-results {
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    
+    .ioc-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      transition: all 0.2s;
+    }
+    
+    .ioc-item:hover {
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    
+    .ioc-item:last-child {
+      border-bottom: none;
+    }
+    
+    .ioc-value {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: linear-gradient(135deg, var(--button-hover-dark), var(--bg-accent-dark));
+      color: var(--text-primary);
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      flex: 1;
+      word-break: break-all;
+      border: 1px solid var(--border-primary);
+      text-shadow: 0 0 3px var(--accent-glow);
+    }
+    
+    .ioc-value:hover {
+      background: linear-gradient(135deg, var(--bg-accent-dark), var(--button-active));
+      color: var(--text-primary);
+      text-shadow: 0 0 8px var(--text-shadow);
+      box-shadow: 0 0 5px var(--text-shadow);
+    }
+    
+    .ioc-type {
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+    
+    .type-ip { 
+      background: linear-gradient(135deg, var(--type-ip-bg), var(--type-ip-bg-dark)); 
+      color: var(--type-ip-text);
+      border-color: var(--type-ip-border);
+    }
+    .type-domain { 
+      background: linear-gradient(135deg, var(--type-domain-bg), var(--type-domain-bg-dark)); 
+      color: var(--type-domain-text);
+      border-color: var(--type-domain-border);
+    }
+    .type-url { 
+      background: linear-gradient(135deg, var(--type-url-bg), var(--type-url-bg-dark)); 
+      color: var(--type-url-text);
+      border-color: var(--type-url-border);
+    }
+    .type-email { 
+      background: linear-gradient(135deg, var(--type-email-bg), var(--type-email-bg-dark)); 
+      color: var(--type-email-text);
+      border-color: var(--type-email-border);
+    }
+    .type-hash { 
+      background: linear-gradient(135deg, var(--type-hash-bg), var(--type-hash-bg-dark)); 
+      color: var(--type-hash-text);
+      border-color: var(--type-hash-border);
+    }
+    
+    .osint-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    
+    .osint-link {
+      padding: 2px 6px;
+      background: linear-gradient(135deg, #001122, #003344);
+      color: var(--osint-link-color);
+      text-decoration: none;
+      border-radius: 3px;
+      font-size: 10px;
+      transition: all 0.2s;
+      border: 1px solid #0066cc;
+    }
+    
+    .osint-link:hover {
+      background: linear-gradient(135deg, #003366, #0066cc);
+      color: var(--text-white);
+      box-shadow: 0 0 8px rgba(0, 204, 255, 0.5);
+    }
+
+    .osint-link-container {
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #001122, #002244);
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid #0066cc;
+    }
+
+    .copy-link-btn {
+      background: linear-gradient(135deg, #002244, #004488);
+      border: none;
+      color: #66ccff;
+      padding: 2px 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .copy-link-btn:hover {
+      background: linear-gradient(135deg, #004488, #0066cc);
+      color: var(--text-white);
+    }
+
+    .copy-link-btn i {
+      font-size: 8px;
+      pointer-events: none;
+    }
+
+    /* Dropdown Styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown > .btn {
+      white-space: nowrap;
+    }
+    .dropdown-menu {
+      position: absolute;
+      left: auto;
+      right: 0;
+      top: calc(100% + 4px);
+      background: var(--bg-accent);
+      border: 1px solid var(--border-primary);
+      border-radius: 6px;
+      min-width: 160px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      padding: 6px;
+      display: none;
+      z-index: 1000;
+      /* Prevent overflow */
+      max-width: 200px;
+    }
+    /* For dropdowns that would overflow right edge, position from left */
+    .dropdown:nth-last-child(-n+2) .dropdown-menu {
+      right: auto;
+      left: 0;
+    }
+    .dropdown.open .dropdown-menu { display: block; }
+    .dropdown-item {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    .dropdown-item:hover {
+      background: var(--button-hover);
+      color: var(--text-white);
+    }
+
+    /* Snippet Styles */
+
+    .snippet-search {
+      width: 100%;
+      padding: 8px 12px;
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 0 5px var(--accent-glow);
+    }
+    
+    .snippet-search:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      background: linear-gradient(135deg, var(--button-hover-dark), var(--bg-accent-dark));
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+
+    .snippet-search::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+    
+    .snippet-list {
+      max-height: 380px;
+      overflow-y: auto;
+    }
+    
+    .snippet-item {
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 8px var(--accent-glow-light);
+    }
+    
+    .snippet-header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .snippet-header:hover {
+      background: var(--button-hover-dark);
+    }
+    
+    .snippet-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .snippet-trigger {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: var(--bg-accent-dark);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-secondary);
+    }
+    
+    .snippet-content {
+      padding: 0 12px 12px;
+      display: none;
+      border-top: 1px solid var(--border-secondary);
+      padding-top: 8px;
+    }
+    
+    .snippet-content.expanded {
+      display: block;
+    }
+    
+    .snippet-text {
+      background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent-dark));
+      padding: 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 100px;
+      overflow-y: auto;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      border: 1px solid var(--border-secondary);
+    }
+    
+    .snippet-actions {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+    
+    .empty-state i {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: #002200;
+    }
+    
+    /* Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #22c55e;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #6b7280;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #22c55e;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .notification.success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .notification.error {
+      background: #ef4444;
+      color: white;
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Settings Styles */
+    .settings-row {
+      margin: 12px 0;
+      padding: 8px 0;
+      border-top: 1px solid #002200;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #d1d5db;
+      user-select: none;
+    }
+
+    .setting-item input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #6b7280;
+      border-radius: 3px;
+      background: #22c55e;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .setting-item input[type="checkbox"]:checked {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .setting-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: -2px;
+      left: 2px;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .setting-item:hover input[type="checkbox"] {
+      border-color: #22c55e;
+    }
+
+    /* Float mode styles */
+    body.float-mode {
+      min-width: 400px;
+      min-height: 500px;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+body.float-mode .header {
+      cursor: move;
+      user-select: none;
+}
+
+/* Snippet Tab Buttons */
+.snippet-actions .btn {
+  margin-left: 6px;
+}
+
+/* IOC Results Header + Footer Buttons */
+.ioc-controls .btn,
+.ioc-controls .dropdown > .btn,
+.ioc-footer .btn,
+.ioc-footer .dropdown > .btn {
+  margin-left: 6px;
+}
+
+/* IOC Input Container */
+#ioc-tab .input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: #001100;
+  border-bottom: 1px solid #22c55e;
+}
+
+/* Snippet suggestion dropdown (appears under the IOC input) */
+.snippet-suggestions {
+  position: absolute;
+  background: #0f1724;
+  border: 1px solid #22c55e;
+  color: #4ade80;
+  z-index: 800;
+  max-height: 220px;
+  overflow: auto;
+  display: none;
+  border-radius: 6px;
+}
+.snippet-suggestions.active { display: block; }
+.snippet-suggestions .suggestion { padding: 8px 10px; cursor: pointer; font-size: 13px; }
+.snippet-suggestions .suggestion:hover { background: #001100; }
+.snippet-suggestions .suggestion.selected { background: #0b1220; }
+
+/* IOC footer bulk actions */
+.ioc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid #002200;
+}
+.ioc-footer .ioc-bulk-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* OSINT Sources Styles */
+    .osint-source-item {
+      background: #22c55e;
+      border: 1px solid #002200;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+    }
+
+    .osint-source-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .osint-source-name {
+      font-weight: 500;
+      color: #4ade80;
+      font-size: 13px;
+    }
+
+    .osint-source-type {
+      font-size: 10px;
+      background: #6b7280;
+      color: #4ade80;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .osint-source-url {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #22c55e;
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+
+    .osint-source-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* Graph visualization container */
+    #iocGraph {
+      width: 100%;
+      height: 200px;
+      border: 1px solid #22c55e;
+      border-radius: 6px;
+      background: #1f2937;
+      margin-top: 12px;
+      display: none;
+    }
+
+    #iocGraph.active {
+      display: block;
+    }
+
+    /* File Hash Analysis Styles */
+    .file-hash-section {
+      margin: 12px 0 8px 0;
+      padding: 12px;
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .file-hash-section h4 {
+      color: var(--text-primary);
+      font-size: 13px;
+      margin: 0 0 8px 0;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .file-hash-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .file-hash-controls .btn {
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+
+    .file-hash-filename {
+      color: var(--text-secondary);
+      font-size: 11px;
+      flex: 1;
+      font-family: 'Courier New', monospace;
+    }
+
+    .file-hash-results {
+      display: none;
+      margin-top: 8px;
+      padding: 8px;
+      background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent-dark));
+      border-radius: 4px;
+      border: 1px solid var(--border-primary);
+    }
+
+    .file-hash-results .hash-label {
+      color: var(--text-secondary);
+      font-size: 11px;
+      margin-bottom: 6px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .file-hash-output {
+      color: var(--text-primary);
+      font-size: 10px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      text-shadow: 0 0 3px var(--text-shadow);
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .file-hash-results .btn {
+      padding: 4px 8px;
+      font-size: 10px;
+      margin-top: 6px;
+    }
+
+    /* Notes Tab Styles */
+    .notes-header {
+      margin-bottom: 16px;
+    }
+
+    .notes-header h3 {
+      color: var(--text-primary);
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .notes-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .notes-controls .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .notes-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .notes-list {
+      padding: 8px;
+    }
+
+    .note-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+    }
+
+    .note-modal-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      border-radius: 8px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .note-modal-content h4 {
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .note-textarea {
+      width: 100%;
+      height: 80px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+      margin-bottom: 12px;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .note-textarea:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+
+    .note-textarea::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+
+    .note-modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .note-modal-actions .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Snippet Editor Styles */
+    .snippet-editor {
+      display: none;
+      position: relative;
+      margin-top: 12px;
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-accent));
+      border: 2px solid var(--border-primary);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .snippet-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .snippet-editor-title {
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 5px var(--text-shadow);
+    }
+
+    .snippet-editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .snippet-editor-inputs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .snippet-name-input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .snippet-content-input {
+      width: 100%;
+      min-height: 120px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border-primary);
+      background: linear-gradient(135deg, var(--bg-accent), var(--button-hover-dark));
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+      box-shadow: 0 0 5px var(--accent-glow-light);
+    }
+
+    .snippet-name-input:focus,
+    .snippet-content-input:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      box-shadow: 0 0 10px var(--text-shadow);
+    }
+
+    .snippet-name-input::placeholder,
+    .snippet-content-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+  </style>
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>
+        <i class="fa-solid fa-shield-halved"></i>
+        SOC Toolkit
+      </h1>
+      <div class="version">v0.2</div>
+    </div>
+    <div class="header-controls">
+      <button class="control-btn" id="floatBtn" title="Open in floating window">
+        <i class="fa-solid fa-external-link-alt"></i>
+      </button>
+      <button class="control-btn" id="closeBtn" title="Close">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+  
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="ioc">
+      <i class="fa-solid fa-search"></i>
+      IOC Analysis
+    </button>
+    <button class="tab-btn" data-tab="snippets">
+      <i class="fa-solid fa-code"></i>
+      Snippets
+    </button>
+    <button class="tab-btn" data-tab="notes">
+      <i class="fa-solid fa-file-lines"></i>
+      Notes
+    </button>
+    <button class="tab-btn" data-tab="settings">
+      <i class="fa-solid fa-cog"></i>
+      Settings
+    </button>
+  </div>
+  
+  <!-- IOC Analysis Tab -->
+  <div class="tab-content active" id="ioc-tab">
+    <textarea 
+      class="ioc-input" 
+      placeholder="Paste suspicious text, IPs, domains, URLs, emails, or hashes here for analysis..."
+      id="iocInput"></textarea>
+    <div id="snippetSuggestions" class="snippet-suggestions" role="listbox" aria-label="Snippet suggestions"></div>
+    
+    <div class="btn-group">
+      <button class="btn btn-primary" id="analyzeBtn">
+        <i class="fa-solid fa-search"></i>
+        Analyze
+      </button>
+      <button class="btn btn-secondary" id="clearBtn">
+        <i class="fa-solid fa-trash"></i>
+        Clear
+      </button>
+      <button class="btn btn-success" id="pasteBtn">
+        <i class="fa-solid fa-paste"></i>
+        Paste
+      </button>
+      <button class="btn btn-secondary" id="defangBtn">
+        <i class="fa-solid fa-link-slash"></i>
+        Defang
+      </button>
+      <button class="btn btn-secondary" id="fangBtn">
+        <i class="fa-solid fa-link"></i>
+        Fang
+      </button>
+    </div>
+
+    <div class="settings-row">
+      <label class="setting-item">
+        <input type="checkbox" id="autoAnalyzeToggle" checked>
+        <span class="checkmark"></span>
+        Auto-analyze IOCs
+      </label>
+    </div>
+
+    <!-- prefixes input moved to Snippets tab -->
+
+<div class="ioc-results" id="iocResults">
+  <!-- IOC Results Header -->
+  <div class="ioc-header">
+    <span class="ioc-count">IOC Results [0]</span>
+    <div class="ioc-controls">
+      <button class="btn btn-small" id="copyAllBtn">
+        <i class="fa-solid fa-copy"></i> Copy All
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-small" id="exportDropdown">
+          <i class="fa-solid fa-download"></i> Export ▼
+        </button>
+        <div class="dropdown-menu" id="exportMenu">
+          <button class="dropdown-item" data-export="csv">CSV</button>
+          <button class="dropdown-item" data-export="json">JSON</button>
+          <button class="dropdown-item" data-export="md">Markdown</button>
+          <button class="dropdown-item" data-export="obsidian">Obsidian Graph</button>
+          <button class="dropdown-item" data-export="graph-png">Graph as PNG</button>
+          <button class="dropdown-item" data-export="graph-svg">Graph as SVG</button>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="btn btn-small" id="filterDropdown">
+          <i class="fa-solid fa-filter"></i> Filter ▼
+        </button>
+        <div class="dropdown-menu" id="filterMenu">
+          <button class="dropdown-item" data-filter="all">All</button>
+          <button class="dropdown-item" data-filter="ip">IPs</button>
+          <button class="dropdown-item" data-filter="domain">Domains</button>
+          <button class="dropdown-item" data-filter="url">URLs</button>
+          <button class="dropdown-item" data-filter="email">Emails</button>
+          <button class="dropdown-item" data-filter="hash">Hashes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IOC List -->
+  <div class="ioc-list">
+    <div class="ioc-item empty-state">
+      <i class="fa-solid fa-search"></i>
+      <div>No IOCs found. Run analysis above.</div>
+    </div>
+  </div>
+
+  <!-- IOC Graph Visualization -->
+  <div id="iocGraph" class="ioc-graph"></div>
+
+  <!-- Footer -->
+  <div class="ioc-footer">
+    <label><input type="checkbox" id="selectAllIOCs"> Select All</label>
+    <div class="ioc-bulk-actions">
+      <button class="btn btn-secondary btn-small" id="copySelectedBtn"><i class="fa-regular fa-copy"></i> Copy Selected</button>
+      <button class="btn btn-secondary btn-small" id="exportSelectedBtn"><i class="fa-solid fa-download"></i> Export Selected</button>
+      <button class="btn btn-secondary btn-small" id="openVTSelectedBtn"><i class="fa-solid fa-shield-virus"></i> Open in VT</button>
+    </div>
+  </div>
+</div>
+
+<!-- File Hash Analysis Section -->
+<div class="file-hash-section">
+  <h4>
+    <i class="fa-solid fa-file-shield"></i> File Hash Analysis
+  </h4>
+  <div class="file-hash-controls">
+    <input type="file" id="fileHashInput" style="display: none;">
+    <button id="selectFileBtn" class="btn">
+      <i class="fa-solid fa-file-arrow-up"></i> Select File
+    </button>
+    <span id="selectedFileName" class="file-hash-filename"></span>
+    <button id="hashFileBtn" class="btn" style="display: none;">
+      <i class="fa-solid fa-calculator"></i> Calculate Hashes
+    </button>
+  </div>
+  <div id="fileHashResults" class="file-hash-results">
+    <div class="hash-label">File Hashes:</div>
+    <div id="fileHashOutput" class="file-hash-output"></div>
+    <button id="copyFileHashBtn" class="btn">
+      <i class="fa-solid fa-copy"></i> Copy Hashes
+    </button>
+  </div>
+</div>
+
+  </div>
+  
+  <!-- Snippets Tab -->
+  <div class="tab-content" id="snippets-tab">
+    <input 
+      class="snippet-search" 
+      placeholder="🔍 Search snippets..."
+      id="snippetSearch">
+    
+    <div class="btn-group">
+      <button class="btn btn-primary btn-small" id="addSnippetBtn">
+        <i class="fa-solid fa-plus"></i>
+        Add New
+      </button>
+      <button class="btn btn-secondary btn-small" id="importBtn">
+        <i class="fa-solid fa-upload"></i>
+        Import
+      </button>
+      <button class="btn btn-secondary btn-small" id="exportBtn">
+        <i class="fa-solid fa-download"></i>
+        Export
+      </button>
+    </div>
+
+    <!-- Preset controls for snippet import/export -->
+    <div class="preset-controls" style="display:inline-flex; gap:6px; align-items:center; margin-left:8px;">
+      <select id="snippetPresetSelect" class="btn btn-small" title="Choose import/export preset">
+        <option value="internal">Internal (JSON)</option>
+        <option value="vscode">VSCode (code snippets)</option>
+      </select>
+      <select id="importModeSelect" class="btn btn-small" title="Import mode">
+        <option value="merge">Merge</option>
+        <option value="replace">Replace</option>
+      </select>
+    </div>
+    <div style="display:inline-flex; gap:8px; align-items:center; margin-left:12px;">
+
+    </div>
+    
+    <div class="snippet-list" id="snippetList">
+      <div class="empty-state">
+        <i class="fa-solid fa-code"></i>
+        <div>No snippets found</div>
+        <div style="font-size: 11px; margin-top: 4px;">Create your first snippet to get started</div>
+      </div>
+    </div>
+
+    <!-- Inline snippet editor (hidden by default) -->
+    <div id="snippetEditor" class="snippet-editor">
+      <div class="snippet-editor-header">
+        <strong class="snippet-editor-title">Snippet Editor</strong>
+        <div class="snippet-editor-actions">
+          <button class="btn btn-secondary btn-small" id="snippetCancelBtn">Cancel</button>
+          <button class="btn btn-primary btn-small" id="snippetSaveBtn">Save</button>
+        </div>
+      </div>
+      <div class="snippet-editor-inputs">
+        <input id="snippetNameInput" class="snippet-name-input" placeholder="Name (e.g., 'Incident Summary Template')">
+      </div>
+      <textarea id="snippetContentInput" class="snippet-content-input" placeholder="Content"></textarea>
+    </div>
+  </div>
+  
+  <!-- Investigation Notes Tab -->
+  <div class="tab-content" id="notes-tab">
+    <div class="notes-header">
+      <h3>
+        <i class="fa-solid fa-file-lines"></i> Investigation Notes
+      </h3>
+      <div class="notes-controls">
+        <button id="addNoteBtn" class="btn">
+          <i class="fa-solid fa-plus"></i> Add Note
+        </button>
+        <button id="exportNotesBtn" class="btn">
+          <i class="fa-solid fa-download"></i> Export
+        </button>
+        <button id="clearNotesBtn" class="btn">
+          <i class="fa-solid fa-trash"></i> Clear All
+        </button>
+      </div>
+    </div>
+    
+    <div id="notesContainer" class="notes-container">
+      <div id="notesList" class="notes-list">
+        <!-- Notes will be populated here -->
+      </div>
+    </div>
+    
+    <!-- Add Note Modal -->
+    <div id="noteModal" class="note-modal">
+      <div class="note-modal-content">
+        <h4>Add Investigation Note</h4>
+        <textarea id="newNoteText" class="note-textarea" placeholder="Enter your note..."></textarea>
+        <div class="note-modal-actions">
+          <button id="cancelNoteBtn" class="btn">Cancel</button>
+          <button id="saveNoteBtn" class="btn">Save Note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Settings Tab -->
+  <div class="tab-content" id="settings-tab">
+    <!-- Theme Selection -->
+    <div style="margin-bottom: 20px;">
+      <h3 style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
+        <i class="fa-solid fa-palette"></i> Theme Selection
+      </h3>
+      <p style="color: var(--text-secondary); font-size: 11px; margin-bottom: 12px;">
+        Choose your preferred color theme for the extension interface.
+      </p>
+      
+      <div class="setting-item" style="margin-bottom: 12px;">
+        <label for="themeSelect" style="color: var(--text-secondary); font-size: 12px; margin-right: 12px;">Theme:</label>
+        <select id="themeSelect" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 150px;">
+          <option value="matrix">Matrix (Green)</option>
+          <option value="blue">Cyber Blue</option>
+          <option value="red">Alert Red</option>
+          <option value="purple">Royal Purple</option>
+          <option value="orange">Security Orange</option>
+          <option value="cyan">Neon Cyan</option>
+        </select>
+      </div>
+      
+      <p style="color: var(--text-secondary); font-size: 10px; opacity: 0.8;">
+        <i class="fa-solid fa-info-circle"></i> Theme changes will be applied immediately and saved automatically.
+      </p>
+    </div>
+
+    <div style="border-top: 1px solid var(--border-primary); padding-top: 16px; margin-bottom: 16px;">
+      <h3 style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
+        <i class="fa-solid fa-globe"></i> Custom OSINT Sources
+      </h3>
+      <p style="color: var(--text-secondary); font-size: 11px; margin-bottom: 12px;">
+        Add your own OSINT tools and internal security platforms. Use {{IOC}} as a placeholder for the indicator value.
+      </p>
+      
+      <div class="btn-group" style="margin-bottom: 12px;">
+        <button class="btn btn-primary btn-small" id="addOsintBtn">
+          <i class="fa-solid fa-plus"></i>
+          Add Source
+        </button>
+      </div>
+      
+      <div class="osint-sources-list" id="osintSourcesList">
+        <div class="empty-state" style="padding: 20px; text-align: center;">
+          <i class="fa-solid fa-globe"></i>
+          <div>No custom OSINT sources configured</div>
+          <div style="font-size: 11px; margin-top: 4px;">Add your first source to get started</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OSINT Source Editor (hidden by default) -->
+    <div id="osintEditor" style="display:none; background: var(--bg-secondary); border:1px solid var(--border-primary); padding:12px; border-radius:8px; margin-bottom: 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong style="color: var(--text-primary);">OSINT Source Editor</strong>
+        <div>
+          <button class="btn btn-secondary btn-small" id="osintCancelBtn">Cancel</button>
+          <button class="btn btn-primary btn-small" id="osintSaveBtn">Save</button>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input id="osintNameInput" placeholder="Source Name (e.g., My Internal Tool)" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary);">
+        <select id="osintTypesInput" style="width:120px; padding:8px; border-radius:6px; border:1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary);">
+          <option value="all">All IOCs</option>
+          <option value="ip">IPs Only</option>
+          <option value="domain">Domains Only</option>
+          <option value="url">URLs Only</option>
+          <option value="email">Emails Only</option>
+          <option value="hash">Hashes Only</option>
+        </select>
+      </div>
+      <input id="osintUrlInput" placeholder="URL Template (e.g., https://my-tool.com/lookup?indicator={{IOC}})" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); margin-bottom:8px;">
+      <div style="font-size: 11px; color: #6b7280;">
+        <strong>Examples:</strong><br>
+        • Internal IP Lookup: <code>https://internal-tool.company.com/ip?addr={{IOC}}</code><br>
+        • Custom Threat Intel: <code>https://threat-platform.company.com/search?q={{IOC}}</code>
+      </div>
+    </div>
+
+    <div style="border-top: 1px solid var(--border-primary); padding-top: 16px; margin-bottom: 16px;">
+      <h3 style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
+        <i class="fa-solid fa-window-restore"></i> Floating Window
+      </h3>
+      <div class="setting-item" style="margin-bottom: 12px;">
+        <button id="toggleFloatingBtn" class="btn btn-primary btn-small">
+          <i class="fa-solid fa-external-link-alt"></i>
+          Open Floating Window
+        </button>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 11px;">
+        Open the toolkit in a persistent floating window that stays on screen. The window size and position are automatically saved.
+      </p>
+    </div>
+
+    <div style="border-top: 1px solid var(--border-primary); padding-top: 16px;">
+      <h3 style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
+        <i class="fa-solid fa-project-diagram"></i> IOC Correlation Graph
+      </h3>
+      <div class="setting-item" style="margin-bottom: 12px;">
+        <input type="checkbox" id="enableGraphToggle" checked>
+        Enable IOC relationship visualization
+      </div>
+      <p style="color: var(--text-secondary); font-size: 11px;">
+        When enabled, IOC analysis will show a visual graph of relationships between indicators (e.g., URLs linking to domains, domains resolving to IPs).
+      </p>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
