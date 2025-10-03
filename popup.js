@@ -131,6 +131,9 @@ class SOCToolkit {
 
       if (iocInput) {
         iocInput.addEventListener('input', () => {
+          // Save IOC input to storage for persistence
+          chrome.storage.local.set({ savedIOCInput: iocInput.value });
+          
           // Auto-analysis (debounced)
           clearTimeout(autoAnalyzeTimeout);
           if (this.autoAnalyze) {
@@ -176,6 +179,7 @@ class SOCToolkit {
 
     // --- IOC Results Panel controls ---
   el('copyAllBtn')?.addEventListener('click', () => this.copyAllIOCs());
+  el('clearGraphBtn')?.addEventListener('click', () => this.clearGraph());
 
     document.querySelectorAll('#exportMenu .dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
@@ -577,7 +581,7 @@ class SOCToolkit {
   async loadSettings() {
     return new Promise((resolve) => {
       try {
-        chrome.storage.local.get(['socSettings'], (res) => {
+        chrome.storage.local.get(['socSettings', 'savedIOCInput'], (res) => {
           const defaults = { autoAnalyze: true, enableGraph: true, theme: 'matrix' };
           const s = res.socSettings || defaults;
           this.autoAnalyze = s.autoAnalyze ?? true;
@@ -593,6 +597,14 @@ class SOCToolkit {
           const themeSelect = document.getElementById('themeSelect');
           if (themeSelect) {
             themeSelect.value = this.currentTheme;
+          }
+          
+          // Restore saved IOC input
+          if (res.savedIOCInput) {
+            const iocInput = document.getElementById('iocInput');
+            if (iocInput) {
+              iocInput.value = res.savedIOCInput;
+            }
           }
           
           resolve();
@@ -851,6 +863,18 @@ class SOCToolkit {
   }
 
   clearIOCs() {
+    // Clear the input field
+    const input = document.getElementById('iocInput');
+    if (input) {
+      input.value = '';
+      // Clear saved IOC input from storage
+      chrome.storage.local.remove('savedIOCInput');
+    }
+    
+    // Clear the graph visualization
+    this.clearGraph();
+    
+    // Clear the results display
     const resultsContainer = document.getElementById('iocResults');
     const listEl = resultsContainer?.querySelector('.ioc-list');
     if (listEl) {
@@ -872,6 +896,8 @@ class SOCToolkit {
       const input = document.getElementById('iocInput');
       if (input) {
         input.value = text || '';
+        // Save to storage for persistence
+        chrome.storage.local.set({ savedIOCInput: input.value });
         if (this.autoAnalyze && input.value.trim()) {
           this.analyzeIOCs();
         }
@@ -1133,20 +1159,27 @@ class SOCToolkit {
     const results = [];
     if (!text) return results;
 
-    // Basic patterns
+    // Enhanced patterns for better IOC detection
     const urlRe = /\bhttps?:\/\/[\w.-]+(?::\d+)?(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
     const ipv4Re = /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g;
     const emailRe = /\b[\w.+-]+@([\w-]+\.)+[\w-]{2,}\b/gi;
     // Improved domain regex: limit TLD to 2-24 chars and require at least one subdomain
     const domainRe = /\b(?!https?:\/\/)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi;
+    
+    // Hash patterns - support MD5 (32), SHA1 (40), and SHA256 (64) hex characters
+    const md5Re = /\b[a-f0-9]{32}\b/gi;
+    const sha1Re = /\b[a-f0-9]{40}\b/gi;
     const sha256Re = /\b[a-f0-9]{64}\b/gi;
 
     const add = (type, value, category) => {
       if (!value) return;
-      // Additional validation for domains to prevent false positives
+      // Additional validation for specific categories
       if (category === 'domain') {
-        // Skip if it looks like a file extension or has suspicious patterns
         if (this.isValidDomain(value)) {
+          results.push({ type, value, category });
+        }
+      } else if (category === 'ip') {
+        if (this.isValidIP(value)) {
           results.push({ type, value, category });
         }
       } else {
@@ -1154,14 +1187,40 @@ class SOCToolkit {
       }
     };
 
+    // Extract URLs first
     (text.match(urlRe) || []).forEach(v => add('URL', v, 'url'));
+    
+    // Extract IPs
     (text.match(ipv4Re) || []).forEach(v => add('IPv4', v, 'ip'));
+    
+    // Extract emails
     (text.match(emailRe) || []).forEach(v => add('Email', v, 'email'));
-    (text.match(sha256Re) || []).forEach(v => add('SHA256', v, 'hash'));
+    
+    // Extract hashes - check longest first to avoid partial matches
+    const hashMatches = new Set();
+    (text.match(sha256Re) || []).forEach(v => {
+      if (!hashMatches.has(v.toLowerCase())) {
+        add('SHA256', v.toLowerCase(), 'hash');
+        hashMatches.add(v.toLowerCase());
+      }
+    });
+    (text.match(sha1Re) || []).forEach(v => {
+      if (!hashMatches.has(v.toLowerCase())) {
+        add('SHA1', v.toLowerCase(), 'hash');
+        hashMatches.add(v.toLowerCase());
+      }
+    });
+    (text.match(md5Re) || []).forEach(v => {
+      if (!hashMatches.has(v.toLowerCase())) {
+        add('MD5', v.toLowerCase(), 'hash');
+        hashMatches.add(v.toLowerCase());
+      }
+    });
+    
     // Domains: avoid duplicating ones already part of URLs/emails
     const existing = new Set(results.map(r => r.value.toLowerCase()));
     (text.match(domainRe) || []).forEach(v => {
-      if (!existing.has(v.toLowerCase())) add('Domain', v, 'domain');
+      if (!existing.has(v.toLowerCase())) add('Domain', v.toLowerCase(), 'domain');
     });
 
     return results;
@@ -1173,18 +1232,51 @@ class SOCToolkit {
     const labels = domain.toLowerCase().split('.');
     if (labels.length < 2) return false;
     const tld = labels[labels.length - 1];
+    
+    // Check against TLD list
     if (!this.tlds.has(tld)) {
       return false;
     }
+    
     // Additional checks for common false positives
     const excludePatterns = [
-      /^[a-z]\.[a-z]$/, // Single char domains like "a.b"
+      /^[a-z]\.[a-z]$/i, // Single char domains like "a.b"
       /\.(local|localhost|internal|corp|lan)$/i, // Internal domains
       /^\d+\.\d+$/, // Version numbers like 1.2
+      /^\d+\.\d+\.\d+$/, // Version numbers like 1.2.3
+      /\.(jpg|png|gif|svg|pdf|doc|docx|xls|xlsx|zip|rar|tar|gz)$/i, // File extensions
     ];
     if (excludePatterns.some(pattern => pattern.test(domain))) {
       return false;
     }
+    
+    // Validate each label
+    for (const label of labels) {
+      if (!label || label.length > 63) return false;
+      if (label.startsWith('-') || label.endsWith('-')) return false;
+      if (!/^[a-z0-9-]+$/i.test(label)) return false;
+    }
+    
+    return true;
+  }
+
+  // Helper function to validate IP addresses
+  isValidIP(ip) {
+    if (!ip) return false;
+    const parts = ip.split('.');
+    if (parts.length !== 4) return false;
+    
+    // Check each octet
+    for (const part of parts) {
+      const num = parseInt(part, 10);
+      if (isNaN(num) || num < 0 || num > 255) return false;
+      // Check for leading zeros (except for '0' itself)
+      if (part.length > 1 && part.startsWith('0')) return false;
+    }
+    
+    // Exclude common false positives
+    if (ip === '0.0.0.0' || ip === '255.255.255.255') return false;
+    
     return true;
   }
 
@@ -1495,6 +1587,24 @@ class SOCToolkit {
         graphContainer.classList.remove('active');
       }
     }
+  }
+
+  clearGraph() {
+    const graphContainer = document.getElementById('iocGraph');
+    
+    // Destroy the existing graph instance
+    if (this.iocGraph) {
+      this.iocGraph.destroy();
+      this.iocGraph = null;
+    }
+    
+    // Clear the graph container
+    if (graphContainer) {
+      graphContainer.innerHTML = '';
+      graphContainer.classList.remove('active');
+    }
+    
+    this.showNotification('Graph visualization cleared', 'success');
   }
 
   // === Investigation Notes ===

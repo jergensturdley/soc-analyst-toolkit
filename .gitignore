@@ -1,8 +1,12 @@
 # SOC Analyst Toolkit - Development and Build Files
 .dev/
-.codacy
 content.js.backup
 content_old.js
+
+# Codacy CLI files (local analysis)
+.codacy/
+codacy.yaml
+cli-config.yaml
 
 # Node modules (if any)
 node_modules/
@@ -24,10 +28,12 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
 npm-debug.log*
+.codacy/logs/
 
 # Runtime data
 pids
@@ -38,3 +44,7 @@ pids
 # Temporary files
 *.tmp
 *.temp
+*~
+
+# AI/Copilot instruction files (keep out of version control)
+.github/instructions/codacy.instructions.md

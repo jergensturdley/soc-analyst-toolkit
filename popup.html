@@ -449,8 +449,8 @@
 
     .tab-content {
       display: none;
-      padding: 16px;
-      height: calc(600px - 120px); /* Total height minus header and tab nav */
+      padding: 12px;
+      height: calc(100vh - 120px); /* Use viewport height minus header and tab nav */
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--text-primary) var(--bg-accent);
@@ -665,7 +665,7 @@
       background: linear-gradient(135deg, var(--bg-primary), var(--bg-accent));
       border: 2px solid var(--border-primary);
       border-radius: 6px;
-      max-height: 250px;
+      max-height: 300px;
       overflow-y: auto;
       box-shadow: 0 0 15px var(--accent-glow);
     }
@@ -1191,7 +1191,7 @@ body.float-mode .header {
 
     /* File Hash Analysis Styles */
     .file-hash-section {
-      margin: 12px 0 8px 0;
+      margin: 8px 0 0 0;
       padding: 12px;
       border: 2px solid var(--border-primary);
       border-radius: 6px;
@@ -1527,6 +1527,9 @@ body.float-mode .header {
     <div class="ioc-controls">
       <button class="btn btn-small" id="copyAllBtn">
         <i class="fa-solid fa-copy"></i> Copy All
+      </button>
+      <button class="btn btn-small" id="clearGraphBtn" title="Clear Graph Visualization">
+        <i class="fa-solid fa-diagram-project"></i> Clear Graph
       </button>
       <div class="dropdown">
         <button class="btn btn-small" id="exportDropdown">

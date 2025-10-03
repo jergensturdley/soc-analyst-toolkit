@@ -8,8 +8,8 @@ let pendingAnalysis = null;
 let floatingWindow = null;
 let floatingWindowState = {
   isOpen: false,
-  width: 800,
-  height: 900,
+  width: 850,
+  height: 700,
   left: 100,
   top: 100
 };
@@ -424,7 +424,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     pendingAnalysis = null; // Clear after sending
     return true;
   }
+  
+  if (request.action === 'toggleFloat') {
+    handleFloatingWindow(sendResponse);
+    return true; // Keep the message channel open for async response
+  }
+  
   // ... other message handlers
+  return true;
 });
 
 // Command handler
