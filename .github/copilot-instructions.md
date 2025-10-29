@@ -47,7 +47,7 @@ This is a browser extension (Chrome/Edge) for security operations center (SOC) a
 ## Security and Privacy
 
 ### Critical Requirements
-- **Never send data to external servers** - all processing must be local
+- **Never send data to external servers** - all IOC extraction, parsing, and storage must be local. User-initiated OSINT lookups (e.g., opening VirusTotal links) are allowed as they are explicit user actions.
 - **No tracking or analytics** - user privacy is paramount
 - **Validate all user inputs** - especially when parsing IOCs or snippets
 - **Use CSP-safe code** - no eval(), no inline event handlers in HTML
@@ -131,9 +131,10 @@ This is a browser extension (Chrome/Edge) for security operations center (SOC) a
 
 ### Event Listener Setup
 ```javascript
+// In a class context
 setupEventListeners() {
   document.getElementById('element-id').addEventListener('click', () => {
-    // handler
+    this.handleClick();
   });
 }
 ```
