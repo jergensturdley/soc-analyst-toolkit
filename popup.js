@@ -13,7 +13,17 @@ class SOCToolkit {
     this.iocGraph = null;
     this.currentTheme = 'matrix'; // Default theme
     this.tlds = new Set();
+    // Cache for debounce timeouts
+    this._debounceTimers = {};
+    // Cache for OSINT links to avoid regenerating
+    this._osintLinksCache = new Map();
     this.init();
+  }
+
+  // Utility function for debouncing
+  debounce(key, callback, delay) {
+    clearTimeout(this._debounceTimers[key]);
+    this._debounceTimers[key] = setTimeout(callback, delay);
   }
 
   async init() {
@@ -110,7 +120,6 @@ class SOCToolkit {
     // Auto-analysis on input
     const iocInput = document.getElementById('iocInput');
     const autoAnalyzeToggle = document.getElementById('autoAnalyzeToggle');
-    let autoAnalyzeTimeout;
 
       if (autoAnalyzeToggle) {
         autoAnalyzeToggle.checked = this.autoAnalyze;
@@ -136,13 +145,14 @@ class SOCToolkit {
 
       if (iocInput) {
         iocInput.addEventListener('input', () => {
-          // Save IOC input to storage for persistence
-          chrome.storage.local.set({ savedIOCInput: iocInput.value });
+          // Debounced save to storage
+          this.debounce('saveIOCInput', () => {
+            chrome.storage.local.set({ savedIOCInput: iocInput.value });
+          }, 1000);
           
           // Auto-analysis (debounced)
-          clearTimeout(autoAnalyzeTimeout);
           if (this.autoAnalyze) {
-            autoAnalyzeTimeout = setTimeout(() => {
+            this.debounce('autoAnalyze', () => {
               if (iocInput.value.trim()) {
                 this.analyzeIOCs();
               } else {
@@ -296,6 +306,8 @@ class SOCToolkit {
       this.showNotification('Please enter text to analyze', 'error');
       return;
     }
+    // Clear OSINT links cache when analyzing new IOCs
+    this._osintLinksCache.clear();
     const iocs = this.extractIOCs(input);
     this.displayIOCResults(iocs);
   }
@@ -931,15 +943,25 @@ class SOCToolkit {
   }
 
   escapeHtml(str) {
-    return (str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    if (!str) return '';
+    // Use a single regex with a lookup map for better performance
+    const htmlEscapeMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return str.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
   }
 
   generateOSINTLinks(value, category) {
+    // Check cache first
+    const cacheKey = `${value}:${category}`;
+    if (this._osintLinksCache.has(cacheKey)) {
+      return this._osintLinksCache.get(cacheKey);
+    }
+    
     const enc = encodeURIComponent(value);
     const links = [];
     
@@ -970,13 +992,15 @@ class SOCToolkit {
     }
 
     // Add custom OSINT sources
-    this.customOsintSources.forEach(source => {
+    for (const source of this.customOsintSources) {
       if (source.types === 'all' || source.types === category) {
         const customUrl = source.url.replace(/\{\{IOC\}\}/g, enc);
         links.push({ name: source.name, url: customUrl, custom: true });
       }
-    });
+    }
 
+    // Cache the result
+    this._osintLinksCache.set(cacheKey, links);
     return links;
   }
 
@@ -1354,6 +1378,8 @@ class SOCToolkit {
   saveCustomOsintSources() {
     try {
       chrome.storage.local.set({ customOsintSources: this.customOsintSources });
+      // Clear OSINT links cache when custom sources change
+      this._osintLinksCache.clear();
     } catch (e) {
       console.error('Failed to save custom OSINT sources:', e);
     }
