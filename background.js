@@ -311,17 +311,15 @@ async function generateHashOfText(text) {
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
     
-    // Generate SHA1
-    const sha1Buffer = await crypto.subtle.digest('SHA-1', data);
-    const sha1 = Array.from(new Uint8Array(sha1Buffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    // Generate SHA1 and SHA256 in parallel
+    const [sha1Buffer, sha256Buffer] = await Promise.all([
+      crypto.subtle.digest('SHA-1', data),
+      crypto.subtle.digest('SHA-256', data)
+    ]);
     
-    // Generate SHA256
-    const sha256Buffer = await crypto.subtle.digest('SHA-256', data);
-    const sha256 = Array.from(new Uint8Array(sha256Buffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    // Convert buffers to hex strings more efficiently
+    const sha1 = bufferToHex(sha1Buffer);
+    const sha256 = bufferToHex(sha256Buffer);
     
     const result = `SHA1: ${sha1}\nSHA256: ${sha256}`;
     copyToClipboard(result);
@@ -329,6 +327,16 @@ async function generateHashOfText(text) {
   } catch (e) {
     showNotification('Hash Error', 'Failed to generate hashes');
   }
+}
+
+// Helper function to convert buffer to hex string efficiently
+function bufferToHex(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const hexParts = [];
+  for (let i = 0; i < bytes.length; i++) {
+    hexParts.push(bytes[i].toString(16).padStart(2, '0'));
+  }
+  return hexParts.join('');
 }
 
 function decodeBase64Text(text) {
@@ -436,11 +444,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Command handler
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'toggle-snippets') {
-    // Send a message to the active tab's content script
+  if (command === '_execute_action') {
+    // Handle keyboard shortcut
+    chrome.action.openPopup();
+  } else if (command === 'toggle-snippets') {
+    // Toggle snippet expansion in active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleSnippets' });
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleSnippets' }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('Snippet toggle failed:', chrome.runtime.lastError.message);
+          }
+        });
       }
     });
   }
@@ -561,25 +576,6 @@ async function handleFloatingWindow(sendResponse) {
 chrome.windows.onRemoved.addListener((windowId) => {
   if (floatingWindow && floatingWindow.id === windowId) {
     floatingWindow = null;
-  }
-});
-
-// Keyboard shortcut handler
-chrome.commands.onCommand.addListener((command) => {
-  if (command === '_execute_action') {
-    // Handle keyboard shortcut
-    chrome.action.openPopup();
-  } else if (command === 'toggle-snippets') {
-    // Toggle snippet expansion in active tab
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleSnippets' }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('Snippet toggle failed:', chrome.runtime.lastError.message);
-          }
-        });
-      }
-    });
   }
 });
 

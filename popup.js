@@ -18,9 +18,8 @@ class SOCToolkit {
 
   async init() {
     this.setupEventListeners();
-    // Load everything concurrently for faster startup
+    // Load critical settings first, TLDs lazily
     await Promise.all([
-      this.loadTlds(),
       this.loadSettings(),
       this.loadSnippets(),
       this.loadCustomOsintSources()
@@ -39,16 +38,22 @@ class SOCToolkit {
         chrome.storage.local.remove(['pendingAction', 'pendingText']);
       }
     });
+    
+    // Load TLDs lazily in the background
+    this.loadTlds();
   }
 
   async loadTlds() {
+    // Return immediately if already loaded
+    if (this.tlds && this.tlds.size > 100) return;
+    
     try {
       const { validTlds } = await import('./tlds.js');
       this.tlds = validTlds;
     } catch (error) {
       console.error('Failed to load TLDs:', error);
       // Fallback to a small, common set if loading fails
-      this.tlds = new Set(['com', 'net', 'org', 'edu', 'gov', 'mil', 'io', 'co', 'uk', 'de', 'jp', 'fr', 'au', 'ru', 'ch', 'it', 'nl', 'ca', 'cn', 'br']);
+      this.tlds = new Set(['com', 'net', 'org', 'edu', 'gov', 'mil', 'io', 'co', 'uk', 'de', 'jp', 'fr', 'au', 'ru', 'ch', 'it', 'nl', 'ca', 'cn', 'br', 'us', 'info', 'biz']);
     }
   }
 
@@ -308,15 +313,20 @@ class SOCToolkit {
       return;
     }
 
-    const html = iocs.map(ioc => {
+    // Build HTML in memory first, then update DOM once
+    const htmlParts = [];
+    for (const ioc of iocs) {
       const osintLinks = this.generateOSINTLinks(ioc.value, ioc.category);
-      return `
+      const escapedValue = this.escapeHtml(ioc.value);
+      const truncatedValue = this.truncateText(ioc.value, 40);
+      
+      htmlParts.push(`
         <div class="ioc-item">
           <input type="checkbox" class="ioc-select" />
           <div style="flex: 1;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <div class="ioc-value" data-copy="${this.escapeHtml(ioc.value)}" title="Click to copy">
-                ${this.truncateText(ioc.value, 40)}
+              <div class="ioc-value" data-copy="${escapedValue}" title="Click to copy">
+                ${truncatedValue}
               </div>
               <span class="ioc-type type-${ioc.category.toLowerCase()}">${ioc.type}</span>
             </div>
@@ -329,9 +339,9 @@ class SOCToolkit {
               `).join('')}
             </div>
           </div>
-        </div>`;
-    }).join('');
-    listEl.innerHTML = html;
+        </div>`);
+    }
+    listEl.innerHTML = htmlParts.join('');
 
     // Update count
     const countEl = resultsContainer.querySelector('.ioc-count');
@@ -680,7 +690,11 @@ class SOCToolkit {
       return;
     }
 
-    list.innerHTML = data.map((snip, idx) => `
+    // Build HTML in memory first
+    const htmlParts = [];
+    for (let idx = 0; idx < data.length; idx++) {
+      const snip = data[idx];
+      htmlParts.push(`
       <div class="snippet-item" data-index="${idx}">
         <div class="snippet-header">
           <div class="snippet-name">${this.escapeHtml(snip.name || 'Untitled')}</div>
@@ -693,48 +707,26 @@ class SOCToolkit {
             <button class="btn btn-secondary btn-small action-delete"><i class="fa-regular fa-trash-can"></i> Delete</button>
           </div>
         </div>
-      </div>
-    `).join('');
+      </div>`);
+    }
+    list.innerHTML = htmlParts.join('');
 
-    // Wire up interactions
-    list.querySelectorAll('.snippet-header').forEach((h) => {
-      h.addEventListener('click', () => {
-        h.parentElement.querySelector('.snippet-content').classList.toggle('expanded');
-      });
-    });
-
-    list.querySelectorAll('.action-copy').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
-        const snip = data[idx];
+    // Use event delegation for better performance
+    list.addEventListener('click', (e) => {
+      const target = e.target;
+      const item = target.closest('.snippet-item');
+      if (!item) return;
+      
+      const idx = Number(item.dataset.index);
+      const snip = data[idx];
+      
+      if (target.closest('.snippet-header')) {
+        item.querySelector('.snippet-content').classList.toggle('expanded');
+      } else if (target.closest('.action-copy')) {
         this.copyToClipboard(snip.content || '');
-      });
-    });
-
-    list.querySelectorAll('.action-use').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
-        const snip = data[idx];
-        this.copyToClipboard(snip.content || '');
-        this.showNotification('Snippet copied to clipboard', 'success');
-      });
-    });
-
-    list.querySelectorAll('.action-edit').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
+      } else if (target.closest('.action-edit')) {
         this.openSnippetEditor(idx);
-      });
-    });
-
-    list.querySelectorAll('.action-delete').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
-        const snip = data[idx];
+      } else if (target.closest('.action-delete')) {
         if (confirm(`Delete snippet "${snip.name || 'Untitled'}"?`)) {
           const realIndex = this.snippets.indexOf(snip);
           if (realIndex >= 0) {
@@ -743,7 +735,7 @@ class SOCToolkit {
             this.displaySnippets();
           }
         }
-      });
+      }
     });
   }
 
@@ -1159,6 +1151,9 @@ class SOCToolkit {
     const results = [];
     if (!text) return results;
 
+    // Cache lowercase text for case-insensitive operations
+    const lowerText = text.toLowerCase();
+
     // Enhanced patterns for better IOC detection
     const urlRe = /\bhttps?:\/\/[\w.-]+(?::\d+)?(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
     const ipv4Re = /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g;
@@ -1188,40 +1183,63 @@ class SOCToolkit {
     };
 
     // Extract URLs first
-    (text.match(urlRe) || []).forEach(v => add('URL', v, 'url'));
+    const urls = text.match(urlRe) || [];
+    for (const v of urls) {
+      add('URL', v, 'url');
+    }
     
     // Extract IPs
-    (text.match(ipv4Re) || []).forEach(v => add('IPv4', v, 'ip'));
+    const ips = text.match(ipv4Re) || [];
+    for (const v of ips) {
+      add('IPv4', v, 'ip');
+    }
     
     // Extract emails
-    (text.match(emailRe) || []).forEach(v => add('Email', v, 'email'));
+    const emails = text.match(emailRe) || [];
+    for (const v of emails) {
+      add('Email', v, 'email');
+    }
     
     // Extract hashes - check longest first to avoid partial matches
     const hashMatches = new Set();
-    (text.match(sha256Re) || []).forEach(v => {
-      if (!hashMatches.has(v.toLowerCase())) {
-        add('SHA256', v.toLowerCase(), 'hash');
-        hashMatches.add(v.toLowerCase());
+    const sha256Matches = text.match(sha256Re) || [];
+    for (const v of sha256Matches) {
+      const lowerHash = v.toLowerCase();
+      if (!hashMatches.has(lowerHash)) {
+        add('SHA256', lowerHash, 'hash');
+        hashMatches.add(lowerHash);
       }
-    });
-    (text.match(sha1Re) || []).forEach(v => {
-      if (!hashMatches.has(v.toLowerCase())) {
-        add('SHA1', v.toLowerCase(), 'hash');
-        hashMatches.add(v.toLowerCase());
+    }
+    const sha1Matches = text.match(sha1Re) || [];
+    for (const v of sha1Matches) {
+      const lowerHash = v.toLowerCase();
+      if (!hashMatches.has(lowerHash)) {
+        add('SHA1', lowerHash, 'hash');
+        hashMatches.add(lowerHash);
       }
-    });
-    (text.match(md5Re) || []).forEach(v => {
-      if (!hashMatches.has(v.toLowerCase())) {
-        add('MD5', v.toLowerCase(), 'hash');
-        hashMatches.add(v.toLowerCase());
+    }
+    const md5Matches = text.match(md5Re) || [];
+    for (const v of md5Matches) {
+      const lowerHash = v.toLowerCase();
+      if (!hashMatches.has(lowerHash)) {
+        add('MD5', lowerHash, 'hash');
+        hashMatches.add(lowerHash);
       }
-    });
+    }
     
     // Domains: avoid duplicating ones already part of URLs/emails
-    const existing = new Set(results.map(r => r.value.toLowerCase()));
-    (text.match(domainRe) || []).forEach(v => {
-      if (!existing.has(v.toLowerCase())) add('Domain', v.toLowerCase(), 'domain');
-    });
+    const existing = new Set();
+    for (const r of results) {
+      existing.add(r.value.toLowerCase());
+    }
+    
+    const domains = text.match(domainRe) || [];
+    for (const v of domains) {
+      const lowerDomain = v.toLowerCase();
+      if (!existing.has(lowerDomain)) {
+        add('Domain', lowerDomain, 'domain');
+      }
+    }
 
     return results;
   }
@@ -1229,32 +1247,48 @@ class SOCToolkit {
   // Helper function to validate domains and reduce false positives
   isValidDomain(domain) {
     if (!domain || domain.length > 253) return false;
+    
+    // Cache compiled regex patterns as class properties
+    if (!this._domainExcludePatterns) {
+      this._domainExcludePatterns = [
+        /^[a-z]\.[a-z]$/i, // Single char domains like "a.b"
+        /\.(local|localhost|internal|corp|lan)$/i, // Internal domains
+        /^\d+\.\d+$/, // Version numbers like 1.2
+        /^\d+\.\d+\.\d+$/, // Version numbers like 1.2.3
+        /\.(jpg|png|gif|svg|pdf|doc|docx|xls|xlsx|zip|rar|tar|gz)$/i, // File extensions
+      ];
+      this._labelPattern = /^[a-z0-9-]+$/i;
+    }
+    
     const labels = domain.toLowerCase().split('.');
     if (labels.length < 2) return false;
     const tld = labels[labels.length - 1];
     
-    // Check against TLD list
-    if (!this.tlds.has(tld)) {
-      return false;
+    // Check against TLD list - use fallback for common TLDs if full list not loaded
+    if (this.tlds && this.tlds.size > 100) {
+      if (!this.tlds.has(tld)) {
+        return false;
+      }
+    } else {
+      // Fallback: accept common TLDs if full list not yet loaded
+      const commonTlds = new Set(['com', 'net', 'org', 'edu', 'gov', 'mil', 'io', 'co', 'uk', 'de', 'jp', 'fr', 'au', 'ru', 'ch', 'it', 'nl', 'ca', 'cn', 'br', 'us', 'info', 'biz']);
+      if (!commonTlds.has(tld)) {
+        return false;
+      }
     }
     
-    // Additional checks for common false positives
-    const excludePatterns = [
-      /^[a-z]\.[a-z]$/i, // Single char domains like "a.b"
-      /\.(local|localhost|internal|corp|lan)$/i, // Internal domains
-      /^\d+\.\d+$/, // Version numbers like 1.2
-      /^\d+\.\d+\.\d+$/, // Version numbers like 1.2.3
-      /\.(jpg|png|gif|svg|pdf|doc|docx|xls|xlsx|zip|rar|tar|gz)$/i, // File extensions
-    ];
-    if (excludePatterns.some(pattern => pattern.test(domain))) {
-      return false;
+    // Check exclusion patterns
+    for (const pattern of this._domainExcludePatterns) {
+      if (pattern.test(domain)) {
+        return false;
+      }
     }
     
     // Validate each label
     for (const label of labels) {
       if (!label || label.length > 63) return false;
       if (label.startsWith('-') || label.endsWith('-')) return false;
-      if (!/^[a-z0-9-]+$/i.test(label)) return false;
+      if (!this._labelPattern.test(label)) return false;
     }
     
     return true;
@@ -1523,48 +1557,39 @@ class SOCToolkit {
   detectIOCRelationships(iocs) {
     const relationships = [];
     
-    // Simple relationship detection
-    for (let i = 0; i < iocs.length; i++) {
-      for (let j = i + 1; j < iocs.length; j++) {
-        const ioc1 = iocs[i];
-        const ioc2 = iocs[j];
-        
-        // URL to domain relationship
-        if (ioc1.category === 'url' && ioc2.category === 'domain') {
-          if (ioc1.value.includes(ioc2.value)) {
-            relationships.push({
-              source: ioc1.value,
-              target: ioc2.value,
-              type: 'contains'
-            });
-          }
-        } else if (ioc2.category === 'url' && ioc1.category === 'domain') {
-          if (ioc2.value.includes(ioc1.value)) {
-            relationships.push({
-              source: ioc2.value,
-              target: ioc1.value,
-              type: 'contains'
-            });
-          }
+    // Group IOCs by category for more efficient matching
+    const urlIOCs = [];
+    const domainIOCs = [];
+    const emailIOCs = [];
+    
+    for (const ioc of iocs) {
+      if (ioc.category === 'url') urlIOCs.push(ioc);
+      else if (ioc.category === 'domain') domainIOCs.push(ioc);
+      else if (ioc.category === 'email') emailIOCs.push(ioc);
+    }
+    
+    // URL to domain relationships
+    for (const url of urlIOCs) {
+      for (const domain of domainIOCs) {
+        if (url.value.includes(domain.value)) {
+          relationships.push({
+            source: url.value,
+            target: domain.value,
+            type: 'contains'
+          });
         }
-        
-        // Email to domain relationship
-        if (ioc1.category === 'email' && ioc2.category === 'domain') {
-          if (ioc1.value.includes(ioc2.value)) {
-            relationships.push({
-              source: ioc1.value,
-              target: ioc2.value,
-              type: 'uses'
-            });
-          }
-        } else if (ioc2.category === 'email' && ioc1.category === 'domain') {
-          if (ioc2.value.includes(ioc1.value)) {
-            relationships.push({
-              source: ioc2.value,
-              target: ioc1.value,
-              type: 'uses'
-            });
-          }
+      }
+    }
+    
+    // Email to domain relationships
+    for (const email of emailIOCs) {
+      for (const domain of domainIOCs) {
+        if (email.value.includes(domain.value)) {
+          relationships.push({
+            source: email.value,
+            target: domain.value,
+            type: 'uses'
+          });
         }
       }
     }
@@ -1821,12 +1846,21 @@ Type:   ${this.selectedFile.type || 'Unknown'}`;
       }
       
       const hashBuffer = await crypto.subtle.digest(algorithm, arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return this.bufferToHex(hashBuffer);
     } catch (error) {
       console.error(`Error calculating ${algorithm}:`, error);
       return 'Error calculating hash';
     }
+  }
+
+  // Helper function to convert buffer to hex string efficiently
+  bufferToHex(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const hexParts = [];
+    for (let i = 0; i < bytes.length; i++) {
+      hexParts.push(bytes[i].toString(16).padStart(2, '0'));
+    }
+    return hexParts.join('');
   }
 
   async calculateMD5(arrayBuffer) {
