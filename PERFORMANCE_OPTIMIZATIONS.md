@@ -36,14 +36,14 @@ this.loadTlds();
 
 ### 2. Optimized IOC Extraction
 **File:** `popup.js`
-**Impact:** ~20-30% faster IOC extraction for large texts
+**Impact:** ~25-30% faster IOC extraction for large texts
 
 - Replaced `forEach` with `for...of` loops for better performance
 - Reduced intermediate array creations
 - Used direct loop iteration instead of array methods where appropriate
 - Cached lowercase conversions to avoid repeated operations
 
-**Performance gain:** For processing 1000 IOCs, reduced from ~15ms to ~11ms
+**Performance gain:** For processing 1000 IOCs, reduced from ~15ms to ~11ms (~27% improvement)
 
 ### 3. Efficient DOM Operations
 **File:** `popup.js`
@@ -126,7 +126,7 @@ const sha1 = bufferToHex(sha1Buffer);
 
 ### 10. Improved IOC Relationship Detection
 **File:** `popup.js`
-**Impact:** O(n²) → O(n×m) where m << n
+**Impact:** O(n^2) → O(n*m) where m << n
 
 - Pre-grouped IOCs by category before relationship detection
 - Reduced unnecessary comparisons
@@ -135,7 +135,7 @@ const sha1 = bufferToHex(sha1Buffer);
 **Before:** Comparing all IOCs with all other IOCs
 **After:** Only comparing relevant category pairs
 
-## Performance Metrics
+### Performance Metrics
 
 ### Load Time Improvements
 - Initial popup load: ~15% faster (lazy TLD loading)
