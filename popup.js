@@ -205,7 +205,10 @@ class SOCToolkit {
 
   async init() {
     this.setupEventListeners();
+<<<<<<< HEAD
     this.setupSystemThemeListener(); // Listen for system theme changes
+=======
+>>>>>>> a1ad58a5ea8cb7870aaa63ab8e3b6e88b229eb01
     // Load critical settings first, TLDs lazily
     await Promise.all([
       this.loadSettings(),
@@ -1101,6 +1104,7 @@ class SOCToolkit {
     }
     list.innerHTML = htmlParts.join('');
 
+<<<<<<< HEAD
     // Remove existing event listener if present to prevent duplicates
     if (this._snippetListClickHandler) {
       list.removeEventListener('click', this._snippetListClickHandler);
@@ -1108,6 +1112,10 @@ class SOCToolkit {
 
     // Use event delegation for better performance
     this._snippetListClickHandler = (e) => {
+=======
+    // Use event delegation for better performance
+    list.addEventListener('click', (e) => {
+>>>>>>> a1ad58a5ea8cb7870aaa63ab8e3b6e88b229eb01
       const target = e.target;
       const item = target.closest('.snippet-item');
       if (!item) return;
@@ -1131,8 +1139,12 @@ class SOCToolkit {
           }
         }
       }
+<<<<<<< HEAD
     };
     list.addEventListener('click', this._snippetListClickHandler);
+=======
+    });
+>>>>>>> a1ad58a5ea8cb7870aaa63ab8e3b6e88b229eb01
   }
 
   searchSnippets(query) {
@@ -1569,6 +1581,9 @@ class SOCToolkit {
     const results = [];
     if (!text) return results;
 
+    // Cache lowercase text for case-insensitive operations
+    const lowerText = text.toLowerCase();
+
     // Enhanced patterns for better IOC detection
     const urlRe = /\bhttps?:\/\/[\w.-]+(?::\d+)?(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
     const ipv4Re = /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g;
@@ -1615,6 +1630,7 @@ class SOCToolkit {
     for (const v of ips) {
       add('IPv4', v, 'ip');
     }
+<<<<<<< HEAD
     
     // Extract IPv6 addresses
     const ipv6s = text.match(ipv6Re) || [];
@@ -1627,6 +1643,8 @@ class SOCToolkit {
     for (const v of cves) {
       add('CVE', v.toUpperCase(), 'cve');
     }
+=======
+>>>>>>> a1ad58a5ea8cb7870aaa63ab8e3b6e88b229eb01
     
     // Extract emails
     const emails = text.match(emailRe) || [];
