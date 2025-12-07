@@ -746,6 +746,12 @@
       border-color: var(--type-hash-border);
     }
     
+    .type-cve { 
+      background: linear-gradient(135deg, #4a1a6b, #7c3aed); 
+      color: #e9d5ff;
+      border-color: #7c3aed;
+    }
+    
     .osint-links {
       display: flex;
       flex-wrap: wrap;
@@ -1439,7 +1445,6 @@ body.float-mode .header {
       opacity: 0.7;
     }
   </style>
-  </style>
 </head>
 <body>
   <div class="header">
@@ -1448,15 +1453,55 @@ body.float-mode .header {
         <i class="fa-solid fa-shield-halved"></i>
         SOC Toolkit
       </h1>
-      <div class="version">v0.2</div>
+      <div class="version">v0.3</div>
     </div>
     <div class="header-controls">
+      <button class="control-btn" id="showKeyboardShortcuts" title="Keyboard Shortcuts (?)">
+        <i class="fa-solid fa-keyboard"></i>
+      </button>
       <button class="control-btn" id="floatBtn" title="Open in floating window">
         <i class="fa-solid fa-external-link-alt"></i>
       </button>
       <button class="control-btn" id="closeBtn" title="Close">
         <i class="fa-solid fa-times"></i>
       </button>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="keyboardShortcutsModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:var(--bg-secondary); border:2px solid var(--border-primary); border-radius:12px; padding:20px; max-width:400px; width:90%; max-height:80vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-primary); padding-bottom:12px;">
+        <h3 style="margin:0; color:var(--text-primary);"><i class="fa-solid fa-keyboard"></i> Keyboard Shortcuts</h3>
+        <button id="closeKeyboardShortcuts" class="btn btn-small" style="background:transparent; border:none; color:var(--text-secondary); font-size:18px; cursor:pointer;">&times;</button>
+      </div>
+      <div style="color:var(--text-secondary); font-size:12px;">
+        <div style="margin-bottom:16px;">
+          <h4 style="color:var(--text-primary); margin:0 0 8px 0; font-size:13px;">Global</h4>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Show this help</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">?</kbd></div>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Close / Clear</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Esc</kbd></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <h4 style="color:var(--text-primary); margin:0 0 8px 0; font-size:13px;">Navigation</h4>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>IOC Analysis tab</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Alt+1</kbd></div>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Snippets tab</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Alt+2</kbd></div>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Notes tab</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Alt+3</kbd></div>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Settings tab</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Alt+4</kbd></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <h4 style="color:var(--text-primary); margin:0 0 8px 0; font-size:13px;">IOC Analysis</h4>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Analyze IOCs</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Ctrl+Enter</kbd></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <h4 style="color:var(--text-primary); margin:0 0 8px 0; font-size:13px;">On Web Pages</h4>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Toggle snippets</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Ctrl+Alt+S</kbd></div>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Show snippets list</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Ctrl+Alt+L</kbd></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <h4 style="color:var(--text-primary); margin:0 0 8px 0; font-size:13px;">Browser Shortcuts</h4>
+          <div style="display:flex; justify-content:space-between; margin:4px 0;"><span>Open SOC Toolkit</span><kbd style="background:var(--bg-accent); padding:2px 8px; border-radius:4px; font-family:monospace;">Ctrl+Shift+S</kbd></div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -1528,6 +1573,19 @@ body.float-mode .header {
       <button class="btn btn-small" id="copyAllBtn">
         <i class="fa-solid fa-copy"></i> Copy All
       </button>
+      <!-- Quick Copy Dropdown -->
+      <div class="dropdown">
+        <button class="btn btn-small" id="quickCopyDropdown">
+          <i class="fa-solid fa-bolt"></i> Quick Copy ▼
+        </button>
+        <div class="dropdown-menu" id="quickCopyMenu">
+          <button class="dropdown-item" id="copyAllIPs"><i class="fa-solid fa-network-wired"></i> All IPs</button>
+          <button class="dropdown-item" id="copyAllDomains"><i class="fa-solid fa-globe"></i> All Domains</button>
+          <button class="dropdown-item" id="copyAllURLs"><i class="fa-solid fa-link"></i> All URLs</button>
+          <button class="dropdown-item" id="copyAllHashes"><i class="fa-solid fa-hashtag"></i> All Hashes</button>
+          <button class="dropdown-item" id="copyAllCVEs"><i class="fa-solid fa-bug"></i> All CVEs</button>
+        </div>
+      </div>
       <button class="btn btn-small" id="clearGraphBtn" title="Clear Graph Visualization">
         <i class="fa-solid fa-diagram-project"></i> Clear Graph
       </button>
@@ -1555,6 +1613,7 @@ body.float-mode .header {
           <button class="dropdown-item" data-filter="url">URLs</button>
           <button class="dropdown-item" data-filter="email">Emails</button>
           <button class="dropdown-item" data-filter="hash">Hashes</button>
+          <button class="dropdown-item" data-filter="cve">CVEs</button>
         </div>
       </div>
     </div>
@@ -1721,6 +1780,7 @@ body.float-mode .header {
       <div class="setting-item" style="margin-bottom: 12px;">
         <label for="themeSelect" style="color: var(--text-secondary); font-size: 12px; margin-right: 12px;">Theme:</label>
         <select id="themeSelect" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 150px;">
+          <option value="system">🖥️ Auto (System)</option>
           <option value="matrix">Matrix (Green)</option>
           <option value="blue">Cyber Blue</option>
           <option value="red">Alert Red</option>
@@ -1802,7 +1862,7 @@ body.float-mode .header {
       </p>
     </div>
 
-    <div style="border-top: 1px solid var(--border-primary); padding-top: 16px;">
+    <div style="border-top: 1px solid var(--border-primary); padding-top: 16px; margin-bottom: 16px;">
       <h3 style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
         <i class="fa-solid fa-project-diagram"></i> IOC Correlation Graph
       </h3>
@@ -1812,6 +1872,42 @@ body.float-mode .header {
       </div>
       <p style="color: var(--text-secondary); font-size: 11px;">
         When enabled, IOC analysis will show a visual graph of relationships between indicators (e.g., URLs linking to domains, domains resolving to IPs).
+      </p>
+    </div>
+
+    <!-- Storage & Data Management -->
+    <div style="border-top: 1px solid var(--border-primary); padding-top: 16px;">
+      <h3 style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
+        <i class="fa-solid fa-database"></i> Storage & Data Management
+      </h3>
+      
+      <!-- Storage Indicator -->
+      <div id="storageIndicator" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span style="color: var(--text-secondary); font-size: 11px;">Storage Usage</span>
+          <span id="storageText" style="color: var(--text-secondary); font-size: 11px;">Calculating...</span>
+        </div>
+        <div style="background: var(--bg-accent); border-radius: 4px; height: 8px; overflow: hidden;">
+          <div id="storageBar" style="background: var(--text-primary); height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
+        </div>
+      </div>
+      
+      <!-- Clear Old Data -->
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="color: var(--text-secondary); font-size: 12px;">Clear data older than</span>
+        <select id="clearOldDataDays" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+          <option value="7">7 days</option>
+          <option value="14">14 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+        </select>
+        <button id="clearOldDataBtn" class="btn btn-secondary btn-small">
+          <i class="fa-solid fa-broom"></i> Clear
+        </button>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 11px;">
+        This will remove old investigation notes. Snippets and settings are not affected.
       </p>
     </div>
   </div>

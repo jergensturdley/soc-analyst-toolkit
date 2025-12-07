@@ -48,3 +48,7 @@ pids
 
 # AI/Copilot instruction files (keep out of version control)
 .github/instructions/codacy.instructions.md
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

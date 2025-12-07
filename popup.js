@@ -1,4 +1,181 @@
 // SOC Analyst Toolkit - Popup JavaScript
+"use strict";
+
+// Simple MD5 implementation (public domain)
+// Based on RFC 1321
+const MD5 = (function() {
+  function md5cycle(x, k) {
+    let a = x[0], b = x[1], c = x[2], d = x[3];
+    a = ff(a, b, c, d, k[0], 7, -680876936);
+    d = ff(d, a, b, c, k[1], 12, -389564586);
+    c = ff(c, d, a, b, k[2], 17, 606105819);
+    b = ff(b, c, d, a, k[3], 22, -1044525330);
+    a = ff(a, b, c, d, k[4], 7, -176418897);
+    d = ff(d, a, b, c, k[5], 12, 1200080426);
+    c = ff(c, d, a, b, k[6], 17, -1473231341);
+    b = ff(b, c, d, a, k[7], 22, -45705983);
+    a = ff(a, b, c, d, k[8], 7, 1770035416);
+    d = ff(d, a, b, c, k[9], 12, -1958414417);
+    c = ff(c, d, a, b, k[10], 17, -42063);
+    b = ff(b, c, d, a, k[11], 22, -1990404162);
+    a = ff(a, b, c, d, k[12], 7, 1804603682);
+    d = ff(d, a, b, c, k[13], 12, -40341101);
+    c = ff(c, d, a, b, k[14], 17, -1502002290);
+    b = ff(b, c, d, a, k[15], 22, 1236535329);
+    a = gg(a, b, c, d, k[1], 5, -165796510);
+    d = gg(d, a, b, c, k[6], 9, -1069501632);
+    c = gg(c, d, a, b, k[11], 14, 643717713);
+    b = gg(b, c, d, a, k[0], 20, -373897302);
+    a = gg(a, b, c, d, k[5], 5, -701558691);
+    d = gg(d, a, b, c, k[10], 9, 38016083);
+    c = gg(c, d, a, b, k[15], 14, -660478335);
+    b = gg(b, c, d, a, k[4], 20, -405537848);
+    a = gg(a, b, c, d, k[9], 5, 568446438);
+    d = gg(d, a, b, c, k[14], 9, -1019803690);
+    c = gg(c, d, a, b, k[3], 14, -187363961);
+    b = gg(b, c, d, a, k[8], 20, 1163531501);
+    a = gg(a, b, c, d, k[13], 5, -1444681467);
+    d = gg(d, a, b, c, k[2], 9, -51403784);
+    c = gg(c, d, a, b, k[7], 14, 1735328473);
+    b = gg(b, c, d, a, k[12], 20, -1926607734);
+    a = hh(a, b, c, d, k[5], 4, -378558);
+    d = hh(d, a, b, c, k[8], 11, -2022574463);
+    c = hh(c, d, a, b, k[11], 16, 1839030562);
+    b = hh(b, c, d, a, k[14], 23, -35309556);
+    a = hh(a, b, c, d, k[1], 4, -1530992060);
+    d = hh(d, a, b, c, k[4], 11, 1272893353);
+    c = hh(c, d, a, b, k[7], 16, -155497632);
+    b = hh(b, c, d, a, k[10], 23, -1094730640);
+    a = hh(a, b, c, d, k[13], 4, 681279174);
+    d = hh(d, a, b, c, k[0], 11, -358537222);
+    c = hh(c, d, a, b, k[3], 16, -722521979);
+    b = hh(b, c, d, a, k[6], 23, 76029189);
+    a = hh(a, b, c, d, k[9], 4, -640364487);
+    d = hh(d, a, b, c, k[12], 11, -421815835);
+    c = hh(c, d, a, b, k[15], 16, 530742520);
+    b = hh(b, c, d, a, k[2], 23, -995338651);
+    a = ii(a, b, c, d, k[0], 6, -198630844);
+    d = ii(d, a, b, c, k[7], 10, 1126891415);
+    c = ii(c, d, a, b, k[14], 15, -1416354905);
+    b = ii(b, c, d, a, k[1], 21, -57434055);
+    a = ii(a, b, c, d, k[8], 6, 1700485571);
+    d = ii(d, a, b, c, k[15], 10, -1894986606);
+    c = ii(c, d, a, b, k[6], 15, -1051523);
+    b = ii(b, c, d, a, k[13], 21, -2054922799);
+    a = ii(a, b, c, d, k[4], 6, 1873313359);
+    d = ii(d, a, b, c, k[11], 10, -30611744);
+    c = ii(c, d, a, b, k[2], 15, -1560198380);
+    b = ii(b, c, d, a, k[9], 21, 1309151649);
+    a = ii(a, b, c, d, k[0], 6, -145523070);
+    d = ii(d, a, b, c, k[7], 10, -1120210379);
+    c = ii(c, d, a, b, k[14], 15, 718787259);
+    b = ii(b, c, d, a, k[5], 21, -343485551);
+    x[0] = add32(a, x[0]);
+    x[1] = add32(b, x[1]);
+    x[2] = add32(c, x[2]);
+    x[3] = add32(d, x[3]);
+  }
+
+  function cmn(q, a, b, x, s, t) {
+    a = add32(add32(a, q), add32(x, t));
+    return add32((a << s) | (a >>> (32 - s)), b);
+  }
+
+  function ff(a, b, c, d, x, s, t) {
+    return cmn((b & c) | ((~b) & d), a, b, x, s, t);
+  }
+
+  function gg(a, b, c, d, x, s, t) {
+    return cmn((b & d) | (c & (~d)), a, b, x, s, t);
+  }
+
+  function hh(a, b, c, d, x, s, t) {
+    return cmn(b ^ c ^ d, a, b, x, s, t);
+  }
+
+  function ii(a, b, c, d, x, s, t) {
+    return cmn(c ^ (b | (~d)), a, b, x, s, t);
+  }
+
+  function md5blk(s) {
+    const md5blks = [];
+    for (let i = 0; i < 64; i += 4) {
+      md5blks[i >> 2] = s.charCodeAt(i) + (s.charCodeAt(i + 1) << 8) + (s.charCodeAt(i + 2) << 16) + (s.charCodeAt(i + 3) << 24);
+    }
+    return md5blks;
+  }
+
+  function md5blk_array(a) {
+    const md5blks = [];
+    for (let i = 0; i < 64; i += 4) {
+      md5blks[i >> 2] = a[i] + (a[i + 1] << 8) + (a[i + 2] << 16) + (a[i + 3] << 24);
+    }
+    return md5blks;
+  }
+
+  function add32(a, b) {
+    return (a + b) & 0xFFFFFFFF;
+  }
+
+  function rhex(n) {
+    const hex_chr = '0123456789abcdef';
+    let s = '';
+    for (let j = 0; j < 4; j++) {
+      s += hex_chr.charAt((n >> (j * 8 + 4)) & 0x0F) + hex_chr.charAt((n >> (j * 8)) & 0x0F);
+    }
+    return s;
+  }
+
+  function hex(x) {
+    return rhex(x[0]) + rhex(x[1]) + rhex(x[2]) + rhex(x[3]);
+  }
+
+  function md5(s) {
+    const n = s.length;
+    let state = [1732584193, -271733879, -1732584194, 271733878];
+    let i;
+    for (i = 64; i <= n; i += 64) {
+      md5cycle(state, md5blk(s.substring(i - 64, i)));
+    }
+    s = s.substring(i - 64);
+    const tail = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i = 0; i < s.length; i++) {
+      tail[i >> 2] |= s.charCodeAt(i) << ((i % 4) << 3);
+    }
+    tail[i >> 2] |= 0x80 << ((i % 4) << 3);
+    if (i > 55) {
+      md5cycle(state, tail);
+      for (i = 0; i < 16; i++) tail[i] = 0;
+    }
+    tail[14] = n * 8;
+    md5cycle(state, tail);
+    return hex(state);
+  }
+
+  function md5_array(uint8Array) {
+    const n = uint8Array.length;
+    let state = [1732584193, -271733879, -1732584194, 271733878];
+    let i;
+    for (i = 64; i <= n; i += 64) {
+      md5cycle(state, md5blk_array(uint8Array.subarray(i - 64, i)));
+    }
+    const remaining = uint8Array.subarray(i - 64);
+    const tail = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i = 0; i < remaining.length; i++) {
+      tail[i >> 2] |= remaining[i] << ((i % 4) << 3);
+    }
+    tail[i >> 2] |= 0x80 << ((i % 4) << 3);
+    if (i > 55) {
+      md5cycle(state, tail);
+      for (i = 0; i < 16; i++) tail[i] = 0;
+    }
+    tail[14] = n * 8;
+    md5cycle(state, tail);
+    return hex(state);
+  }
+
+  return { hash: md5, hashArray: md5_array };
+})();
 
 class SOCToolkit {
   constructor() {
@@ -13,14 +190,24 @@ class SOCToolkit {
     this.iocGraph = null;
     this.currentTheme = 'matrix'; // Default theme
     this.tlds = new Set();
+    // Cache for debounce timeouts
+    this._debounceTimers = {};
+    // Cache for OSINT links to avoid regenerating
+    this._osintLinksCache = new Map();
     this.init();
+  }
+
+  // Utility function for debouncing
+  debounce(key, callback, delay) {
+    clearTimeout(this._debounceTimers[key]);
+    this._debounceTimers[key] = setTimeout(callback, delay);
   }
 
   async init() {
     this.setupEventListeners();
-    // Load everything concurrently for faster startup
+    this.setupSystemThemeListener(); // Listen for system theme changes
+    // Load critical settings first, TLDs lazily
     await Promise.all([
-      this.loadTlds(),
       this.loadSettings(),
       this.loadSnippets(),
       this.loadCustomOsintSources()
@@ -39,16 +226,22 @@ class SOCToolkit {
         chrome.storage.local.remove(['pendingAction', 'pendingText']);
       }
     });
+    
+    // Load TLDs lazily in the background
+    this.loadTlds();
   }
 
   async loadTlds() {
+    // Return immediately if already loaded
+    if (this.tlds && this.tlds.size > 100) return;
+    
     try {
       const { validTlds } = await import('./tlds.js');
       this.tlds = validTlds;
     } catch (error) {
       console.error('Failed to load TLDs:', error);
       // Fallback to a small, common set if loading fails
-      this.tlds = new Set(['com', 'net', 'org', 'edu', 'gov', 'mil', 'io', 'co', 'uk', 'de', 'jp', 'fr', 'au', 'ru', 'ch', 'it', 'nl', 'ca', 'cn', 'br']);
+      this.tlds = new Set(['com', 'net', 'org', 'edu', 'gov', 'mil', 'io', 'co', 'uk', 'de', 'jp', 'fr', 'au', 'ru', 'ch', 'it', 'nl', 'ca', 'cn', 'br', 'us', 'info', 'biz']);
     }
   }
 
@@ -105,7 +298,6 @@ class SOCToolkit {
     // Auto-analysis on input
     const iocInput = document.getElementById('iocInput');
     const autoAnalyzeToggle = document.getElementById('autoAnalyzeToggle');
-    let autoAnalyzeTimeout;
 
       if (autoAnalyzeToggle) {
         autoAnalyzeToggle.checked = this.autoAnalyze;
@@ -131,13 +323,14 @@ class SOCToolkit {
 
       if (iocInput) {
         iocInput.addEventListener('input', () => {
-          // Save IOC input to storage for persistence
-          chrome.storage.local.set({ savedIOCInput: iocInput.value });
+          // Debounced save to storage
+          this.debounce('saveIOCInput', () => {
+            chrome.storage.local.set({ savedIOCInput: iocInput.value });
+          }, 1000);
           
           // Auto-analysis (debounced)
-          clearTimeout(autoAnalyzeTimeout);
           if (this.autoAnalyze) {
-            autoAnalyzeTimeout = setTimeout(() => {
+            this.debounce('autoAnalyze', () => {
               if (iocInput.value.trim()) {
                 this.analyzeIOCs();
               } else {
@@ -174,8 +367,45 @@ class SOCToolkit {
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 'Enter') this.analyzeIOCs();
-      if (e.key === 'Escape') this.clearIOCs();
+      if (e.key === 'Escape') {
+        this.clearIOCs();
+        this.hideKeyboardShortcuts();
+      }
+      // Show keyboard shortcuts with ?
+      if (e.key === '?' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.showKeyboardShortcuts();
+      }
+      // Quick navigation with numbers
+      if (e.altKey && !e.target.matches('input, textarea')) {
+        if (e.key === '1') { e.preventDefault(); this.switchTab('ioc'); }
+        if (e.key === '2') { e.preventDefault(); this.switchTab('snippets'); }
+        if (e.key === '3') { e.preventDefault(); this.switchTab('notes'); }
+        if (e.key === '4') { e.preventDefault(); this.switchTab('settings'); }
+      }
     });
+
+    // Quick copy buttons
+    el('copyAllIPs')?.addEventListener('click', () => this.copyIOCsByType('ip'));
+    el('copyAllDomains')?.addEventListener('click', () => this.copyIOCsByType('domain'));
+    el('copyAllHashes')?.addEventListener('click', () => this.copyIOCsByType('hash'));
+    el('copyAllURLs')?.addEventListener('click', () => this.copyIOCsByType('url'));
+    el('copyAllCVEs')?.addEventListener('click', () => this.copyIOCsByType('cve'));
+
+    // Keyboard shortcuts modal
+    el('showKeyboardShortcuts')?.addEventListener('click', () => this.showKeyboardShortcuts());
+    el('closeKeyboardShortcuts')?.addEventListener('click', () => this.hideKeyboardShortcuts());
+
+    // Storage management
+    el('clearOldDataBtn')?.addEventListener('click', () => {
+      const days = parseInt(document.getElementById('clearOldDataDays')?.value || '30', 10);
+      if (confirm(`Clear all data older than ${days} days?`)) {
+        this.clearOldData(days);
+      }
+    });
+
+    // Update storage indicator on settings tab switch
+    // Will be called when settings tab opens
 
     // --- IOC Results Panel controls ---
   el('copyAllBtn')?.addEventListener('click', () => this.copyAllIOCs());
@@ -281,6 +511,7 @@ class SOCToolkit {
       this.displayNotes();
     } else if (tabName === 'settings') {
       this.displayCustomOsintSources();
+      this.updateStorageIndicator();
     }
   }
 
@@ -291,6 +522,8 @@ class SOCToolkit {
       this.showNotification('Please enter text to analyze', 'error');
       return;
     }
+    // Clear OSINT links cache when analyzing new IOCs
+    this._osintLinksCache.clear();
     const iocs = this.extractIOCs(input);
     this.displayIOCResults(iocs);
   }
@@ -308,15 +541,20 @@ class SOCToolkit {
       return;
     }
 
-    const html = iocs.map(ioc => {
+    // Build HTML in memory first, then update DOM once
+    const htmlParts = [];
+    for (const ioc of iocs) {
       const osintLinks = this.generateOSINTLinks(ioc.value, ioc.category);
-      return `
+      const escapedValue = this.escapeHtml(ioc.value);
+      const truncatedValue = this.truncateText(ioc.value, 40);
+      
+      htmlParts.push(`
         <div class="ioc-item">
           <input type="checkbox" class="ioc-select" />
           <div style="flex: 1;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <div class="ioc-value" data-copy="${this.escapeHtml(ioc.value)}" title="Click to copy">
-                ${this.truncateText(ioc.value, 40)}
+              <div class="ioc-value" data-copy="${escapedValue}" title="Click to copy">
+                ${truncatedValue}
               </div>
               <span class="ioc-type type-${ioc.category.toLowerCase()}">${ioc.type}</span>
             </div>
@@ -329,9 +567,9 @@ class SOCToolkit {
               `).join('')}
             </div>
           </div>
-        </div>`;
-    }).join('');
-    listEl.innerHTML = html;
+        </div>`);
+    }
+    listEl.innerHTML = htmlParts.join('');
 
     // Update count
     const countEl = resultsContainer.querySelector('.ioc-count');
@@ -355,6 +593,140 @@ class SOCToolkit {
       return;
     }
     this.copyToClipboard(values.join('\n'));
+  }
+
+  // Quick copy methods for specific IOC types
+  copyIOCsByType(type) {
+    const items = Array.from(document.querySelectorAll('.ioc-item')).filter(item => {
+      const typeEl = item.querySelector('.ioc-type');
+      if (!typeEl) return false;
+      const itemType = typeEl.textContent.toLowerCase();
+      if (type === 'ip') return itemType === 'ipv4' || itemType === 'ipv6';
+      if (type === 'hash') return itemType === 'md5' || itemType === 'sha1' || itemType === 'sha256';
+      return itemType === type.toLowerCase();
+    });
+    
+    const values = items.map(item => item.querySelector('.ioc-value')?.textContent.trim()).filter(Boolean);
+    
+    if (values.length === 0) {
+      this.showNotification(`No ${type}s found`, 'error');
+      return;
+    }
+    
+    this.copyToClipboard(values.join('\n'));
+    this.showNotification(`Copied ${values.length} ${type}${values.length > 1 ? 's' : ''}`, 'success');
+  }
+
+  // Get IOC statistics
+  getIOCStats() {
+    const items = Array.from(document.querySelectorAll('.ioc-item:not(.empty-state)'));
+    const stats = {
+      total: items.length,
+      ipv4: 0,
+      ipv6: 0,
+      domain: 0,
+      url: 0,
+      email: 0,
+      hash: 0,
+      cve: 0
+    };
+    
+    items.forEach(item => {
+      const typeEl = item.querySelector('.ioc-type');
+      if (!typeEl) return;
+      const type = typeEl.textContent.toLowerCase();
+      if (type === 'ipv4') stats.ipv4++;
+      else if (type === 'ipv6') stats.ipv6++;
+      else if (type === 'domain') stats.domain++;
+      else if (type === 'url') stats.url++;
+      else if (type === 'email') stats.email++;
+      else if (type === 'md5' || type === 'sha1' || type === 'sha256') stats.hash++;
+      else if (type === 'cve') stats.cve++;
+    });
+    
+    return stats;
+  }
+
+  // Show keyboard shortcuts modal
+  showKeyboardShortcuts() {
+    const modal = document.getElementById('keyboardShortcutsModal');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  hideKeyboardShortcuts() {
+    const modal = document.getElementById('keyboardShortcutsModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  // Get storage usage info
+  async getStorageUsage() {
+    return new Promise((resolve) => {
+      chrome.storage.local.getBytesInUse(null, (bytes) => {
+        const maxBytes = chrome.storage.local.QUOTA_BYTES || 5242880; // 5MB default
+        resolve({
+          used: bytes,
+          max: maxBytes,
+          percent: Math.round((bytes / maxBytes) * 100),
+          usedFormatted: this.formatBytes(bytes),
+          maxFormatted: this.formatBytes(maxBytes)
+        });
+      });
+    });
+  }
+
+  formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async updateStorageIndicator() {
+    const indicator = document.getElementById('storageIndicator');
+    const bar = document.getElementById('storageBar');
+    const text = document.getElementById('storageText');
+    
+    if (!indicator) return;
+    
+    const usage = await this.getStorageUsage();
+    if (bar) bar.style.width = `${usage.percent}%`;
+    if (text) text.textContent = `${usage.usedFormatted} / ${usage.maxFormatted} (${usage.percent}%)`;
+    
+    // Color based on usage
+    if (bar) {
+      if (usage.percent > 90) bar.style.background = '#ef4444';
+      else if (usage.percent > 70) bar.style.background = '#f59e0b';
+      else bar.style.background = 'var(--text-primary)';
+    }
+  }
+
+  async clearOldData(daysOld = 30) {
+    const cutoff = Date.now() - (daysOld * 24 * 60 * 60 * 1000);
+    const notes = await this.loadNotes();
+    
+    const filteredNotes = notes.filter(note => {
+      const match = note.match(/^\[([^\]]+)\]/);
+      if (match) {
+        try {
+          const noteDate = new Date(match[1]).getTime();
+          return noteDate > cutoff;
+        } catch {
+          return true;
+        }
+      }
+      return true;
+    });
+    
+    const removed = notes.length - filteredNotes.length;
+    await this.saveNotes(filteredNotes);
+    await this.updateStorageIndicator();
+    
+    this.showNotification(`Cleared ${removed} old notes`, 'success');
   }
 
   exportIOCs(format = 'csv') {
@@ -610,6 +982,7 @@ class SOCToolkit {
           resolve();
         });
       } catch (e) {
+        console.error('Failed to load settings:', e);
         this.autoAnalyze = true;
         this.enableGraph = true;
         this.currentTheme = 'matrix';
@@ -628,7 +1001,9 @@ class SOCToolkit {
         theme: this.currentTheme
       };
       chrome.storage.local.set({ socSettings });
-    } catch {}
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
   }
 
   // === Theme Management ===
@@ -636,12 +1011,34 @@ class SOCToolkit {
     // Remove existing theme data attributes
     document.body.removeAttribute('data-theme');
     
+    // Handle system theme preference
+    if (themeName === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      // Use matrix for dark mode, blue for light mode (both are dark themes, but blue is slightly lighter)
+      // Since all themes are dark, we'll keep matrix as default
+      // For true light/dark, you'd need a light theme
+      themeName = prefersDark ? 'matrix' : 'blue';
+    }
+    
     // Apply new theme (if not matrix/default)
     if (themeName !== 'matrix') {
       document.body.setAttribute('data-theme', themeName);
     }
     
     this.currentTheme = themeName;
+  }
+
+  // Setup system theme change listener
+  setupSystemThemeListener() {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', () => {
+      // Only react if user has selected 'system' theme
+      chrome.storage.local.get(['socSettings'], (res) => {
+        if (res.socSettings?.theme === 'system') {
+          this.applyTheme('system');
+        }
+      });
+    });
   }
 
   // === Snippets ===
@@ -653,6 +1050,7 @@ class SOCToolkit {
           resolve();
         });
       } catch (e) {
+        console.error('Failed to load snippets:', e);
         this.snippets = [];
         resolve();
       }
@@ -662,7 +1060,9 @@ class SOCToolkit {
   async saveSnippets() {
     try {
       await chrome.storage.local.set({ snippets: this.snippets });
-    } catch {}
+    } catch (e) {
+      console.error('Failed to save snippets:', e);
+    }
   }
 
   displaySnippets(filtered = null) {
@@ -680,7 +1080,11 @@ class SOCToolkit {
       return;
     }
 
-    list.innerHTML = data.map((snip, idx) => `
+    // Build HTML in memory first
+    const htmlParts = [];
+    for (let idx = 0; idx < data.length; idx++) {
+      const snip = data[idx];
+      htmlParts.push(`
       <div class="snippet-item" data-index="${idx}">
         <div class="snippet-header">
           <div class="snippet-name">${this.escapeHtml(snip.name || 'Untitled')}</div>
@@ -693,48 +1097,31 @@ class SOCToolkit {
             <button class="btn btn-secondary btn-small action-delete"><i class="fa-regular fa-trash-can"></i> Delete</button>
           </div>
         </div>
-      </div>
-    `).join('');
+      </div>`);
+    }
+    list.innerHTML = htmlParts.join('');
 
-    // Wire up interactions
-    list.querySelectorAll('.snippet-header').forEach((h) => {
-      h.addEventListener('click', () => {
-        h.parentElement.querySelector('.snippet-content').classList.toggle('expanded');
-      });
-    });
+    // Remove existing event listener if present to prevent duplicates
+    if (this._snippetListClickHandler) {
+      list.removeEventListener('click', this._snippetListClickHandler);
+    }
 
-    list.querySelectorAll('.action-copy').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
-        const snip = data[idx];
+    // Use event delegation for better performance
+    this._snippetListClickHandler = (e) => {
+      const target = e.target;
+      const item = target.closest('.snippet-item');
+      if (!item) return;
+      
+      const idx = Number(item.dataset.index);
+      const snip = data[idx];
+      
+      if (target.closest('.snippet-header')) {
+        item.querySelector('.snippet-content').classList.toggle('expanded');
+      } else if (target.closest('.action-copy')) {
         this.copyToClipboard(snip.content || '');
-      });
-    });
-
-    list.querySelectorAll('.action-use').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
-        const snip = data[idx];
-        this.copyToClipboard(snip.content || '');
-        this.showNotification('Snippet copied to clipboard', 'success');
-      });
-    });
-
-    list.querySelectorAll('.action-edit').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
+      } else if (target.closest('.action-edit')) {
         this.openSnippetEditor(idx);
-      });
-    });
-
-    list.querySelectorAll('.action-delete').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.snippet-item');
-        const idx = Number(item.dataset.index);
-        const snip = data[idx];
+      } else if (target.closest('.action-delete')) {
         if (confirm(`Delete snippet "${snip.name || 'Untitled'}"?`)) {
           const realIndex = this.snippets.indexOf(snip);
           if (realIndex >= 0) {
@@ -743,8 +1130,9 @@ class SOCToolkit {
             this.displaySnippets();
           }
         }
-      });
-    });
+      }
+    };
+    list.addEventListener('click', this._snippetListClickHandler);
   }
 
   searchSnippets(query) {
@@ -939,15 +1327,25 @@ class SOCToolkit {
   }
 
   escapeHtml(str) {
-    return (str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    if (!str) return '';
+    // Use a single regex with a lookup map for better performance
+    const htmlEscapeMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return str.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
   }
 
   generateOSINTLinks(value, category) {
+    // Check cache first
+    const cacheKey = `${value}:${category}`;
+    if (this._osintLinksCache.has(cacheKey)) {
+      return this._osintLinksCache.get(cacheKey);
+    }
+    
     const enc = encodeURIComponent(value);
     const links = [];
     
@@ -976,15 +1374,25 @@ class SOCToolkit {
       const tr = `https://threat.rip/search?q=hash%253A${encodeURIComponent(value)}`;
       links.push({ name: 'threat.rip', url: tr });
     }
+    
+    // CVE lookups
+    if (category === 'cve') {
+      links.push({ name: 'NVD', url: `https://nvd.nist.gov/vuln/detail/${enc}` });
+      links.push({ name: 'MITRE', url: `https://cve.mitre.org/cgi-bin/cvename.cgi?name=${enc}` });
+      links.push({ name: 'CVE Details', url: `https://www.cvedetails.com/cve/${enc}/` });
+      links.push({ name: 'Exploit-DB', url: `https://www.exploit-db.com/search?cve=${enc}` });
+    }
 
     // Add custom OSINT sources
-    this.customOsintSources.forEach(source => {
+    for (const source of this.customOsintSources) {
       if (source.types === 'all' || source.types === category) {
         const customUrl = source.url.replace(/\{\{IOC\}\}/g, enc);
         links.push({ name: source.name, url: customUrl, custom: true });
       }
-    });
+    }
 
+    // Cache the result
+    this._osintLinksCache.set(cacheKey, links);
     return links;
   }
 
@@ -1010,8 +1418,10 @@ class SOCToolkit {
   defangText(text) {
     if (!text) return text;
     let t = text;
-    // Protocols
-    t = t.replace(/https?:\/\//gi, m => m.replace('t', 'x').replace('t', 'x')); // http -> hxxp, https -> hxxps
+    // Protocols - use explicit replacements for accuracy
+    t = t.replace(/https:\/\//gi, 'hxxps://');
+    t = t.replace(/http:\/\//gi, 'hxxp://');
+    t = t.replace(/ftp:\/\//gi, 'fxp://');
     // Dots in hostnames/emails
     t = t.replace(/\./g, '[.]');
     // @ in emails
@@ -1162,6 +1572,13 @@ class SOCToolkit {
     // Enhanced patterns for better IOC detection
     const urlRe = /\bhttps?:\/\/[\w.-]+(?::\d+)?(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
     const ipv4Re = /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g;
+    
+    // IPv6 pattern - matches full, compressed, and mixed formats
+    const ipv6Re = /\b(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(?::[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(?:ffff(?::0{1,4})?:)?(?:(?:25[0-5]|(?:2[0-4]|1?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|1?[0-9])?[0-9])|(?:[0-9a-fA-F]{1,4}:){1,4}:(?:(?:25[0-5]|(?:2[0-4]|1?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|1?[0-9])?[0-9]))\b/gi;
+    
+    // CVE pattern - matches CVE-YYYY-NNNNN format
+    const cveRe = /\bCVE-\d{4}-\d{4,}\b/gi;
+    
     const emailRe = /\b[\w.+-]+@([\w-]+\.)+[\w-]{2,}\b/gi;
     // Improved domain regex: limit TLD to 2-24 chars and require at least one subdomain
     const domainRe = /\b(?!https?:\/\/)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi;
@@ -1188,40 +1605,75 @@ class SOCToolkit {
     };
 
     // Extract URLs first
-    (text.match(urlRe) || []).forEach(v => add('URL', v, 'url'));
+    const urls = text.match(urlRe) || [];
+    for (const v of urls) {
+      add('URL', v, 'url');
+    }
     
     // Extract IPs
-    (text.match(ipv4Re) || []).forEach(v => add('IPv4', v, 'ip'));
+    const ips = text.match(ipv4Re) || [];
+    for (const v of ips) {
+      add('IPv4', v, 'ip');
+    }
+    
+    // Extract IPv6 addresses
+    const ipv6s = text.match(ipv6Re) || [];
+    for (const v of ipv6s) {
+      add('IPv6', v.toLowerCase(), 'ip');
+    }
+    
+    // Extract CVEs
+    const cves = text.match(cveRe) || [];
+    for (const v of cves) {
+      add('CVE', v.toUpperCase(), 'cve');
+    }
     
     // Extract emails
-    (text.match(emailRe) || []).forEach(v => add('Email', v, 'email'));
+    const emails = text.match(emailRe) || [];
+    for (const v of emails) {
+      add('Email', v, 'email');
+    }
     
     // Extract hashes - check longest first to avoid partial matches
     const hashMatches = new Set();
-    (text.match(sha256Re) || []).forEach(v => {
-      if (!hashMatches.has(v.toLowerCase())) {
-        add('SHA256', v.toLowerCase(), 'hash');
-        hashMatches.add(v.toLowerCase());
+    const sha256Matches = text.match(sha256Re) || [];
+    for (const v of sha256Matches) {
+      const lowerHash = v.toLowerCase();
+      if (!hashMatches.has(lowerHash)) {
+        add('SHA256', lowerHash, 'hash');
+        hashMatches.add(lowerHash);
       }
-    });
-    (text.match(sha1Re) || []).forEach(v => {
-      if (!hashMatches.has(v.toLowerCase())) {
-        add('SHA1', v.toLowerCase(), 'hash');
-        hashMatches.add(v.toLowerCase());
+    }
+    const sha1Matches = text.match(sha1Re) || [];
+    for (const v of sha1Matches) {
+      const lowerHash = v.toLowerCase();
+      if (!hashMatches.has(lowerHash)) {
+        add('SHA1', lowerHash, 'hash');
+        hashMatches.add(lowerHash);
       }
-    });
-    (text.match(md5Re) || []).forEach(v => {
-      if (!hashMatches.has(v.toLowerCase())) {
-        add('MD5', v.toLowerCase(), 'hash');
-        hashMatches.add(v.toLowerCase());
+    }
+    const md5Matches = text.match(md5Re) || [];
+    for (const v of md5Matches) {
+      const lowerHash = v.toLowerCase();
+      if (!hashMatches.has(lowerHash)) {
+        add('MD5', lowerHash, 'hash');
+        hashMatches.add(lowerHash);
       }
-    });
+    }
     
     // Domains: avoid duplicating ones already part of URLs/emails
-    const existing = new Set(results.map(r => r.value.toLowerCase()));
-    (text.match(domainRe) || []).forEach(v => {
-      if (!existing.has(v.toLowerCase())) add('Domain', v.toLowerCase(), 'domain');
-    });
+    const existing = new Set();
+    for (const r of results) {
+      existing.add(r.value.toLowerCase());
+    }
+    
+    const domains = text.match(domainRe) || [];
+    for (const v of domains) {
+      const lowerDomain = v.toLowerCase();
+      if (!existing.has(lowerDomain)) {
+        add('Domain', lowerDomain, 'domain');
+      }
+    }
 
     return results;
   }
@@ -1229,32 +1681,48 @@ class SOCToolkit {
   // Helper function to validate domains and reduce false positives
   isValidDomain(domain) {
     if (!domain || domain.length > 253) return false;
+    
+    // Cache compiled regex patterns as class properties
+    if (!this._domainExcludePatterns) {
+      this._domainExcludePatterns = [
+        /^[a-z]\.[a-z]$/i, // Single char domains like "a.b"
+        /\.(local|localhost|internal|corp|lan)$/i, // Internal domains
+        /^\d+\.\d+$/, // Version numbers like 1.2
+        /^\d+\.\d+\.\d+$/, // Version numbers like 1.2.3
+        /\.(jpg|png|gif|svg|pdf|doc|docx|xls|xlsx|zip|rar|tar|gz)$/i, // File extensions
+      ];
+      this._labelPattern = /^[a-z0-9-]+$/i;
+    }
+    
     const labels = domain.toLowerCase().split('.');
     if (labels.length < 2) return false;
     const tld = labels[labels.length - 1];
     
-    // Check against TLD list
-    if (!this.tlds.has(tld)) {
-      return false;
+    // Check against TLD list - use fallback for common TLDs if full list not loaded
+    if (this.tlds && this.tlds.size > 100) {
+      if (!this.tlds.has(tld)) {
+        return false;
+      }
+    } else {
+      // Fallback: accept common TLDs if full list not yet loaded
+      const commonTlds = new Set(['com', 'net', 'org', 'edu', 'gov', 'mil', 'io', 'co', 'uk', 'de', 'jp', 'fr', 'au', 'ru', 'ch', 'it', 'nl', 'ca', 'cn', 'br', 'us', 'info', 'biz']);
+      if (!commonTlds.has(tld)) {
+        return false;
+      }
     }
     
-    // Additional checks for common false positives
-    const excludePatterns = [
-      /^[a-z]\.[a-z]$/i, // Single char domains like "a.b"
-      /\.(local|localhost|internal|corp|lan)$/i, // Internal domains
-      /^\d+\.\d+$/, // Version numbers like 1.2
-      /^\d+\.\d+\.\d+$/, // Version numbers like 1.2.3
-      /\.(jpg|png|gif|svg|pdf|doc|docx|xls|xlsx|zip|rar|tar|gz)$/i, // File extensions
-    ];
-    if (excludePatterns.some(pattern => pattern.test(domain))) {
-      return false;
+    // Check exclusion patterns
+    for (const pattern of this._domainExcludePatterns) {
+      if (pattern.test(domain)) {
+        return false;
+      }
     }
     
     // Validate each label
     for (const label of labels) {
       if (!label || label.length > 63) return false;
       if (label.startsWith('-') || label.endsWith('-')) return false;
-      if (!/^[a-z0-9-]+$/i.test(label)) return false;
+      if (!this._labelPattern.test(label)) return false;
     }
     
     return true;
@@ -1311,6 +1779,7 @@ class SOCToolkit {
           resolve();
         });
       } catch (e) {
+        console.error('Failed to load custom OSINT sources:', e);
         this.customOsintSources = [];
         resolve();
       }
@@ -1320,6 +1789,8 @@ class SOCToolkit {
   saveCustomOsintSources() {
     try {
       chrome.storage.local.set({ customOsintSources: this.customOsintSources });
+      // Clear OSINT links cache when custom sources change
+      this._osintLinksCache.clear();
     } catch (e) {
       console.error('Failed to save custom OSINT sources:', e);
     }
@@ -1451,6 +1922,12 @@ class SOCToolkit {
     const graphContainer = document.getElementById('iocGraph');
     if (!graphContainer || !this.enableGraph) return;
 
+    // Destroy existing graph to prevent memory leaks
+    if (this.iocGraph) {
+      this.iocGraph.destroy();
+      this.iocGraph = null;
+    }
+
     // Build nodes and edges for visualization
     const nodes = new vis.DataSet();
     const edges = new vis.DataSet();
@@ -1523,48 +2000,39 @@ class SOCToolkit {
   detectIOCRelationships(iocs) {
     const relationships = [];
     
-    // Simple relationship detection
-    for (let i = 0; i < iocs.length; i++) {
-      for (let j = i + 1; j < iocs.length; j++) {
-        const ioc1 = iocs[i];
-        const ioc2 = iocs[j];
-        
-        // URL to domain relationship
-        if (ioc1.category === 'url' && ioc2.category === 'domain') {
-          if (ioc1.value.includes(ioc2.value)) {
-            relationships.push({
-              source: ioc1.value,
-              target: ioc2.value,
-              type: 'contains'
-            });
-          }
-        } else if (ioc2.category === 'url' && ioc1.category === 'domain') {
-          if (ioc2.value.includes(ioc1.value)) {
-            relationships.push({
-              source: ioc2.value,
-              target: ioc1.value,
-              type: 'contains'
-            });
-          }
+    // Group IOCs by category for more efficient matching
+    const urlIOCs = [];
+    const domainIOCs = [];
+    const emailIOCs = [];
+    
+    for (const ioc of iocs) {
+      if (ioc.category === 'url') urlIOCs.push(ioc);
+      else if (ioc.category === 'domain') domainIOCs.push(ioc);
+      else if (ioc.category === 'email') emailIOCs.push(ioc);
+    }
+    
+    // URL to domain relationships
+    for (const url of urlIOCs) {
+      for (const domain of domainIOCs) {
+        if (url.value.includes(domain.value)) {
+          relationships.push({
+            source: url.value,
+            target: domain.value,
+            type: 'contains'
+          });
         }
-        
-        // Email to domain relationship
-        if (ioc1.category === 'email' && ioc2.category === 'domain') {
-          if (ioc1.value.includes(ioc2.value)) {
-            relationships.push({
-              source: ioc1.value,
-              target: ioc2.value,
-              type: 'uses'
-            });
-          }
-        } else if (ioc2.category === 'email' && ioc1.category === 'domain') {
-          if (ioc2.value.includes(ioc1.value)) {
-            relationships.push({
-              source: ioc2.value,
-              target: ioc1.value,
-              type: 'uses'
-            });
-          }
+      }
+    }
+    
+    // Email to domain relationships
+    for (const email of emailIOCs) {
+      for (const domain of domainIOCs) {
+        if (email.value.includes(domain.value)) {
+          relationships.push({
+            source: email.value,
+            target: domain.value,
+            type: 'uses'
+          });
         }
       }
     }
@@ -1641,23 +2109,38 @@ class SOCToolkit {
       return;
     }
 
-    notesList.innerHTML = notes.map((note, index) => `
+    notesList.innerHTML = notes.map((note, index) => {
+      // Parse timestamp and content safely
+      const timestampMatch = note.match(/^\[([^\]]+)\]\s*(.*)$/s);
+      let dateStr = '';
+      let noteContent = note;
+      if (timestampMatch) {
+        try {
+          dateStr = new Date(timestampMatch[1]).toLocaleString();
+          noteContent = timestampMatch[2] || '';
+        } catch {
+          dateStr = 'Invalid date';
+        }
+      }
+      // Escape HTML to prevent XSS
+      const escapedContent = this.escapeHtml(noteContent);
+      return `
       <div class="note-item" style="border-bottom: 1px solid #374151; padding: 8px; margin-bottom: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
           <div style="flex: 1;">
             <div style="color: var(--muted-text); font-size: 11px; margin-bottom: 4px;">
-              ${new Date(note.split('] ')[0].substring(1)).toLocaleString()}
+              ${this.escapeHtml(dateStr)}
             </div>
             <div style="color: var(--text-color); font-size: 13px; white-space: pre-wrap;">
-              ${note.split('] ')[1] || note}
+              ${escapedContent}
             </div>
           </div>
           <button onclick="toolkit.deleteNote(${index})" style="background: var(--danger-color); color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   showAddNoteModal() {
@@ -1821,30 +2304,31 @@ Type:   ${this.selectedFile.type || 'Unknown'}`;
       }
       
       const hashBuffer = await crypto.subtle.digest(algorithm, arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return this.bufferToHex(hashBuffer);
     } catch (error) {
       console.error(`Error calculating ${algorithm}:`, error);
       return 'Error calculating hash';
     }
   }
 
+  // Helper function to convert buffer to hex string efficiently
+  bufferToHex(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const hexParts = [];
+    for (let i = 0; i < bytes.length; i++) {
+      hexParts.push(bytes[i].toString(16).padStart(2, '0'));
+    }
+    return hexParts.join('');
+  }
+
   async calculateMD5(arrayBuffer) {
-    // Simple MD5 implementation for browsers
-    // Note: For production use, consider using a proper crypto library
+    // Use proper MD5 implementation
     try {
-      // Convert to hex for a basic hash (not actual MD5, but serves as placeholder)
       const uint8Array = new Uint8Array(arrayBuffer);
-      let hash = '';
-      for (let i = 0; i < Math.min(uint8Array.length, 1024); i += 4) {
-        const chunk = uint8Array.slice(i, i + 4);
-        const sum = chunk.reduce((a, b) => a + b, 0);
-        hash += sum.toString(16).padStart(2, '0');
-      }
-      // Pad to 32 characters (MD5 length)
-      return (hash + '0'.repeat(32)).substring(0, 32);
-    } catch {
-      return 'MD5 calculation not available';
+      return MD5.hashArray(uint8Array);
+    } catch (error) {
+      console.error('MD5 calculation failed:', error);
+      return 'MD5 calculation failed';
     }
   }
 

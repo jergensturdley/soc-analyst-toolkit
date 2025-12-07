@@ -17,19 +17,24 @@
     if (request.action === "getSelectedText") {
       const selectedText = window.getSelection().toString().trim();
       sendResponse({ text: selectedText });
+      return false; // Synchronous response
     }
     if (request.action === "highlightIOCs") {
       highlightIOCsOnPage(request.iocs);
       sendResponse({ success: true });
+      return false; // Synchronous response
     }
     if (request.action === "copyToClipboard") {
       copyToClipboard(request.text);
       sendResponse({ success: true });
+      return false; // Synchronous response
     }
     if (request.action === "toggleSnippets") {
       toggleSnippetSystem();
       sendResponse({ success: true });
+      return false; // Synchronous response
     }
+    return false; // No async response needed
   });
 
   // Simple snippet system setup
@@ -299,18 +304,24 @@
         
         listContainer.innerHTML = content;
         
-        // Store snippets in window for onclick handler
-        window.socSnippets = loadedSnippets;
+        // Store snippets in namespaced object to avoid global pollution
+        if (!window.__socToolkit) {
+          window.__socToolkit = {};
+        }
+        window.__socToolkit.snippets = loadedSnippets;
         
-        // Add global copy function
-        window.copySnippetContent = function(index) {
-          const snippet = window.socSnippets[index];
+        // Add namespaced copy function
+        window.__socToolkit.copySnippetContent = function(index) {
+          const snippet = window.__socToolkit.snippets[index];
           if (snippet && snippet.content) {
             const processedContent = processSnippetContent(snippet.content);
             copyToClipboard(processedContent);
             listContainer.remove();
           }
         };
+        
+        // Legacy support for inline onclick handlers
+        window.copySnippetContent = window.__socToolkit.copySnippetContent;
         
         // Add click-to-close and escape key handler
         listContainer.addEventListener('click', (e) => {
